@@ -27,10 +27,10 @@ MULTIPLICATIVE_FACTOR = 0.2
 PATIENCE = 15
 NUM_EPOCHES = 200
 EPOCH_TO_SAVE = 5
-BATCH_SIZE = 512
+BATCH_SIZE = 128
 model_str = 'Model 2'
 plt_data_file_name = 'plt_data.npy'
-folder = '/home/shuhao/Downloads/data/cifar_base'
+folder = '/home/shuhao/Downloads/data/base'
 
 
 ############################################################
@@ -41,42 +41,38 @@ folder = '/home/shuhao/Downloads/data/cifar_base'
 # Normalizing should only be used if I am not using pretrained parameters
 # unless the pretrained parameters expect normalized inputs
 transform_train = transforms.Compose([
-    # Only apply these augmentations some times
-    transforms.RandomApply(
-        [
-            transforms.ColorJitter(brightness=0.5, contrast=0.5)
-            # Test this transformation. Does not seem to help
-            # transforms.RandomAffine(degrees=0, translate=[.1, .1])
-        ],
-        p=0.5
-    ),
-    # This transformation proven to cause unreliable accuracy around 40% mark.
-    # transforms.RandomPerspective(p=0.35, distortion_scale=0.5, interpolation=3),
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.RandomRotation(15),
-    transforms.ToTensor(),
-    transforms.RandomErasing(p=0.5, scale=(0.02, 0.20))
-])
+        # Only apply these augmentations some times
+        transforms.RandomApply(
+                [
+                    transforms.ColorJitter(brightness=0.5, contrast=0.5)
+                    # Test this transformation. Does not seem to help
+                    #transforms.RandomAffine(degrees=0, translate=[.1, .1])
+                 ],
+                p=0.5
+            ),
+        # This transformation proven to cause unreliable accuracy around 40% mark.
+        # transforms.RandomPerspective(p=0.35, distortion_scale=0.5, interpolation=3),
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(15),
+        transforms.ToTensor(),
+        transforms.RandomErasing(p=0.5, scale=(0.02, 0.20))
+    ])
 
 # For speed reason, FiveCrop is not performed on development set.
 transform_dev = transforms.Compose([
-    transforms.ToTensor()
-])
+        transforms.ToTensor()
+    ])
 
+train_dataset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
+train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True,
-                                        download=True, transform=transform_train)
-train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE,
-                                          shuffle=True, num_workers=4)
-
-dev_dataset = torchvision.datasets.CIFAR10(root='./data', train=False,
-                                       download=True, transform=transform_dev)
-dev_dataloader = torch.utils.data.DataLoader(dev_dataset, batch_size=BATCH_SIZE,
-                                         shuffle=False, num_workers=4)
+dev_dataset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform_dev)
+dev_dataloader = torch.utils.data.DataLoader(dev_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
 dataset_sizes = [len(train_dataset), len(dev_dataset)]
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print('Using device: ', device)
 
 if not os.path.exists(folder):
     os.mkdir(folder)
@@ -211,11 +207,8 @@ def train_model(model, criterion, optimizer, early_stopping=None, scheduler=None
         epoch_loss = 0.0
         epoch_correct = 0
 
-        countI = 0
         # Iterate over mini batches of training data.
         for inputs, labels in train_dataloader:
-            print('batch: ', countI)
-            countI += 1
             # if GPU device exists, must load data to GPU.
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -237,7 +230,6 @@ def train_model(model, criterion, optimizer, early_stopping=None, scheduler=None
             # loss.item is the loss averaged over the mini-batch
             epoch_loss += loss.item() * inputs.size(0)
             epoch_correct += torch.sum(preds == labels.data)
-
 
         # Print average loss for training
         epoch_avg_loss = epoch_loss / dataset_sizes[0]
@@ -266,6 +258,7 @@ def train_model(model, criterion, optimizer, early_stopping=None, scheduler=None
 
             epoch_loss += loss.item() * inputs.size(0)
             epoch_correct += torch.sum(preds == labels.data)
+
 
         epoch_avg_loss = epoch_loss / dataset_sizes[1]
         epoch_acc = epoch_correct.item() / dataset_sizes[1]  # item gets value from tensor containing one value regardless of device
