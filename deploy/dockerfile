@@ -1,0 +1,8 @@
+FROM pytorch/pytorch:latest
+
+RUN conda install matplotlib
+
+COPY . /GCP_AI
+WORKDIR /GCP_AI
+
+ENTRYPOINT ["python", "./base.py"]

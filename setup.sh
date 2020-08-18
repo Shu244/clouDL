@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Downloads packages needed for this package
 # Original built for Linux (Ubuntu) device
 # Prerequisites: Anaconda

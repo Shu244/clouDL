@@ -30,7 +30,7 @@ EPOCH_TO_SAVE = 5
 BATCH_SIZE = 128
 model_str = 'Model 2'
 plt_data_file_name = 'plt_data.npy'
-folder = '/home/shuhao/Downloads/data/base'
+folder = '../base'
 
 
 ############################################################
@@ -64,10 +64,10 @@ transform_dev = transforms.Compose([
         transforms.ToTensor()
     ])
 
-train_dataset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
+train_dataset = torchvision.datasets.CIFAR100(root='../data', train=True, download=True, transform=transform_train)
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 
-dev_dataset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform_dev)
+dev_dataset = torchvision.datasets.CIFAR100(root='../data', train=False, download=True, transform=transform_dev)
 dev_dataloader = torch.utils.data.DataLoader(dev_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
 dataset_sizes = [len(train_dataset), len(dev_dataset)]
