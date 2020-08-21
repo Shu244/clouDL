@@ -8,7 +8,7 @@ the best option.
 # Docker build
 From the root of the repo: 
 
-<code>sudo docker build --tag gcp_ai --file deploy/dockerfile .</code>
+<code>docker build --tag gcp_ai --file deploy/dockerfile .</code>
 
 # Docker run
-<code>sudo docker run --name aicontainer --gpus all gcp_ai</code>
+<code>docker run --name aicontainer --gpus all gcp_ai</code>
