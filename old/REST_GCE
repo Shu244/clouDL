@@ -1,0 +1,88 @@
+POST https://www.googleapis.com/compute/v1/projects/stoked-brand-285120/zones/us-central1-b/instances
+{
+  "kind": "compute#instance",
+  "name": "instance-1",
+  "zone": "projects/stoked-brand-285120/zones/us-central1-b",
+  "machineType": "projects/stoked-brand-285120/zones/us-central1-b/machineTypes/n1-standard-2",
+  "displayDevice": {
+    "enableDisplay": false
+  },
+  "metadata": {
+    "kind": "compute#metadata",
+    "items": []
+  },
+  "tags": {
+    "items": []
+  },
+  "guestAccelerators": [
+    {
+      "acceleratorCount": 1,
+      "acceleratorType": "projects/stoked-brand-285120/zones/us-central1-b/acceleratorTypes/nvidia-tesla-t4"
+    }
+  ],
+  "disks": [
+    {
+      "kind": "compute#attachedDisk",
+      "type": "PERSISTENT",
+      "boot": true,
+      "mode": "READ_WRITE",
+      "autoDelete": true,
+      "deviceName": "instance-1",
+      "initializeParams": {
+        "sourceImage": "projects/ml-images/global/images/c2-deeplearning-pytorch-1-4-cu101-v20200804-debian-9",
+        "diskType": "projects/stoked-brand-285120/zones/us-central1-b/diskTypes/pd-standard",
+        "diskSizeGb": "100"
+      },
+      "diskEncryptionKey": {}
+    }
+  ],
+  "canIpForward": false,
+  "networkInterfaces": [
+    {
+      "kind": "compute#networkInterface",
+      "subnetwork": "projects/stoked-brand-285120/regions/us-central1/subnetworks/default",
+      "accessConfigs": [
+        {
+          "kind": "compute#accessConfig",
+          "name": "External NAT",
+          "type": "ONE_TO_ONE_NAT",
+          "networkTier": "PREMIUM"
+        }
+      ],
+      "aliasIpRanges": []
+    }
+  ],
+  "description": "",
+  "labels": {},
+  "scheduling": {
+    "preemptible": true,
+    "onHostMaintenance": "TERMINATE",
+    "automaticRestart": false,
+    "nodeAffinities": []
+  },
+  "deletionProtection": false,
+  "reservationAffinity": {
+    "consumeReservationType": "ANY_RESERVATION"
+  },
+  "serviceAccounts": [
+    {
+      "email": "873973865900-compute@developer.gserviceaccount.com",
+      "scopes": [
+        "https://www.googleapis.com/auth/devstorage.read_only",
+        "https://www.googleapis.com/auth/logging.write",
+        "https://www.googleapis.com/auth/monitoring.write",
+        "https://www.googleapis.com/auth/servicecontrol",
+        "https://www.googleapis.com/auth/service.management.readonly",
+        "https://www.googleapis.com/auth/trace.append"
+      ]
+    }
+  ],
+  "shieldedInstanceConfig": {
+    "enableSecureBoot": false,
+    "enableVtpm": true,
+    "enableIntegrityMonitoring": true
+  },
+  "confidentialInstanceConfig": {
+    "enableConfidentialCompute": false
+  }
+}
