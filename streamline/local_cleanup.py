@@ -243,7 +243,6 @@ def make_bucket(bucket_name, location):
     storage_client.create_bucket(bucket_name, location=location)
 
 
-# TODO: data_path should point to a archived and zip file!!!!
 def move_data(bucket_name, data_path):
     print(
         '''
@@ -251,6 +250,10 @@ def move_data(bucket_name, data_path):
         -bucket name: {0}
         -data_path: {1}
         '''.format(bucket_name, data_path))
+
+    exts_list = data_path.split('.')
+    if len(exts_list) < 3 or exts_list[-1] != 'zip' or exts_list[-2] != 'tar':
+        raise ValueError("Data path must be archived (.tar) and compressed (.zip)")
 
     upload_folder(bucket_name, data_path, 'data/')
 
