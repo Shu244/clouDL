@@ -1,4 +1,5 @@
 data
 base
 *.pyc
-access_token.py
+secrets*
+access_token*
