@@ -1,13 +1,9 @@
 {
-  "zone": ["us-central1-b", "us-central1-c", "us-central1-a", "us-central1-d"],
+  "zones": ["us-central1-b", "us-central1-c", "us-central1-f", "us-central1-a"],
   "gpu": "nvidia-tesla-t4",
-  "gpu_count": 2,
+  "gpu_count": 1,
   "family": "pytorch-1-4-cu101",
   "diskSizeGb": "100",
   "preemptible": true,
-  "startup_script":
-'''echo "Hello World!"
-RANK=$(curl http://metadata/computeMetadata/v1/instance/attributes/rank -H "Metadata-Flavor: Google")
-echo "Your rank is $RANK"
-'''
-    }
+  "name_prefix": "vm"
+}

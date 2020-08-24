@@ -167,7 +167,9 @@ def list_instances(project_id, zone):
     return result['items'] if 'items' in result else None
 
 
-def create_instance(project_id, configs, zone, name, rank, bucket_name):
+def create_instance(project_id, configs, startup_script, zone, rank, bucket_name):
+    name = configs["name_prefix"] + ("-%d" % rank)
+
     image_response = compute.images().getFromFamily(
         project='deeplearning-platform-release',
         family=configs['family']).execute()
@@ -182,7 +184,6 @@ def create_instance(project_id, configs, zone, name, rank, bucket_name):
         "name": name,
         "machineType": machine_type,
 
-        # Specify the boot disk and the image to use as a source.
         "disks": [
             {
                 "boot": True,
@@ -241,7 +242,7 @@ def create_instance(project_id, configs, zone, name, rank, bucket_name):
                     # Startup script is automatically executed by the
                     # instance upon startup.
                     'key': 'startup-script',
-                    'value': configs['startup_script']
+                    'value': startup_script
                 },
                 {
                     'key': 'rank',
@@ -282,63 +283,6 @@ def delete_instance(project_id, zone, name):
         zone=zone,
         instance=name).execute()
 
+import subprocess
 
-def test():
-    # Access metadata with:
-    # RANK=$(curl http://metadata/computeMetadata/v1/instance/attributes/rank -H "Metadata-Flavor: Google")
-    # sudo /opt/deeplearning/install-driver.sh to install drivers
-
-    # View startup script logs
-    # sudo journalctl -u google-startup-scripts.service
-    project_id = "stoked-brand-285120"
-    configs = {
-        "zone": ["us-central1-b", "us-central1-c", "us-central1-a", "us-central1-d"],
-        "gpu": "nvidia-tesla-t4",
-        "gpu_count": 2,
-        "family": "pytorch-1-4-cu101",
-        "diskSizeGb": "100",
-        "preemptible": True,
-        # Do not add to file, add separately
-        "startup_script":
-'''echo "Hello World!"
-RANK=$(curl http://metadata/computeMetadata/v1/instance/attributes/rank -H "Metadata-Flavor: Google")
-echo "Your rank is $RANK"
-'''
-    }
-    zone = "us-central1-b"
-    name = "vm-1"
-    # Throws an exception when VM cannot be created
-    operation = create_instance(project_id, configs, zone, name, rank=1, "somebucket_name")
-    # Returns false when trying to create VM
-    wait_for_operation(project_id, operation['name'], zone)
-
-test()
-exit()
-
-# def main(project_id, bucket, zone, instance_name, wait=True):
-#
-#     print('Creating instance.')
-#
-#     operation = create_instance(compute, project, zone, instance_name, bucket)
-#     wait_for_operation(compute, project, zone, operation['name'])
-#
-#     instances = list_instances(compute, project, zone)
-#
-#     print('Instances in project %s and zone %s:' % (project, zone))
-#     for instance in instances:
-#         print(' - ' + instance['name'])
-#
-#     print("""
-#         Instance created.
-#         It will take a minute or two for the instance to complete work.
-#         Check this URL: http://storage.googleapis.com/{}/output.png
-#         Once the image is uploaded press enter to delete the instance.
-#         """.format(bucket))
-#
-#     if wait:
-#         input()
-#
-#     print('Deleting instance.')
-#
-#     operation = delete_instance(compute, project, zone, instance_name)
-#     wait_for_operation(compute, project, zone, operation['name'])
+subprocess.call(['bash', './train_model.sh', "stoked-brand-285120-test1"])
