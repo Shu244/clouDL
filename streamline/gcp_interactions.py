@@ -228,8 +228,12 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
             {
                 'email': 'default',
                 'scopes': [
+                    # Read and write to cloud storage
                     'https://www.googleapis.com/auth/devstorage.read_write',
-                    'https://www.googleapis.com/auth/logging.write'
+                    # Write logs
+                    'https://www.googleapis.com/auth/logging.write',
+                    # Manage compute engine instances (needed for self deleting)
+                    'https://www.googleapis.com/auth/compute'
                 ]
             }
         ],
@@ -263,6 +267,15 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
 
 
 def wait_for_operation(project_id, operation, zone):
+    '''
+    Waits for an operation in GCP to finish then report its status
+
+    :param project_id: Project id the operation took place in
+    :param operation: Operation name
+    :param zone: Zone of the operation
+    :return: True if successful, false otherwise
+    '''
+
     while True:
         result = compute.zoneOperations().get(
             project=project_id,
@@ -283,6 +296,24 @@ def delete_instance(project_id, zone, name):
         zone=zone,
         instance=name).execute()
 
-import subprocess
 
-subprocess.call(['bash', './train_model.sh', "stoked-brand-285120-test1"])
+class QuickSend:
+    def __init__(self, temp_path, bucket_name):
+        self.temp_path = temp_path
+        self.bucket_name = bucket_name
+
+    def send(self, filename, msg, folder):
+        '''
+        Writes the msg to the filename in the tmp folder then sends it
+        to google cloud storage in the folder specified by the arg.
+
+        :param filename: Name of the file of for the msg
+        :param msg: Message to send
+        :param folder: Folder to store the file in cloud storage
+        '''
+
+        file_path = os.path.join(self.temp_path, filename)
+        f = open(file_path, 'w')
+        f.write(msg)
+        f.close()
+        upload_file(self.bucket_name, file_path, folder)

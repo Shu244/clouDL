@@ -1,0 +1,33 @@
+{
+  "iterations": 3,
+  "params" : [
+    {
+      "LR": 0.01,
+      "MOMENTUM": 0.9,
+      "L2": 0.00001,
+      "SCHEDULER_STEP": 110,
+      "MULTIPLICATIVE_FACTOR": 0.2,
+      "PATIENCE": 15,
+      "NUM_EPOCHES": 200,
+      "EPOCH_TO_SAVE": 5,
+      "BATCH_SIZE": 128,
+      "model_str": "Model 1",
+      "plt_data_file_name": "plt_data.npy",
+      "folder": "../base"
+    },
+    {
+      "LR": true,
+      "MOMENTUM": 0.9,
+      "L2": 0.00001,
+      "SCHEDULER_STEP": 110,
+      "MULTIPLICATIVE_FACTOR": 0.2,
+      "PATIENCE": 15,
+      "NUM_EPOCHES": 200,
+      "EPOCH_TO_SAVE": 5,
+      "BATCH_SIZE": 128,
+      "model_str": "Model 2",
+      "plt_data_file_name": "plt_data.npy",
+      "folder": "../base"
+    }
+  ]
+}

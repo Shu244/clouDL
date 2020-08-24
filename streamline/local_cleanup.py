@@ -1,7 +1,8 @@
 import argparse
 import json
-# from streamline import gcp_interactions as gcp
+import os
 import gcp_interactions as gcp
+import strings
 
 
 def make_bucket(bucket_name, location):
@@ -27,7 +28,7 @@ def move_data(bucket_name, data_path):
     if len(exts_list) < 3 or exts_list[-1] != 'gz' or exts_list[-2] != 'tar':
         raise ValueError("Data path must be archived (.tar) and compressed (.zip)")
 
-    gcp.upload_file(bucket_name, data_path, 'data')
+    gcp.upload_file(bucket_name, data_path, strings.data)
 
 
 def move_access_token(bucket_name, access_token_pth):
@@ -38,10 +39,10 @@ def move_access_token(bucket_name, access_token_pth):
         -access_token_path: {1}
         '''.format(bucket_name, access_token_pth))
 
-    gcp.upload_file(bucket_name, access_token_pth, 'secrets')
+    gcp.upload_file(bucket_name, access_token_pth, strings.secrets)
 
 
-def rmvms(bucket_name):
+def rmvms(bucket_name, folder_name):
     folder_name = 'VM-progress'
 
     print(
@@ -51,10 +52,35 @@ def rmvms(bucket_name):
         -folder_name: {1}
         '''.format(bucket_name, folder_name))
 
-    gcp.delete_all_prefixes("bucket_name", folder_name)
+    gcp.delete_all_prefixes(bucket_name, folder_name)
 
 
-def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup_script_pth):
+def hyperparamters(bucket_name, hyparams_path, quick_send):
+    print(
+        '''
+        Removes error and recreates progress folder to hold new hyperparamters. 
+        -bucket name: {0}
+        -hyparams_pth: {1}
+        '''.format(bucket_name, hyparams_path))
+
+    print("Removing the vm-progress folder in bucket %s" % bucket_name)
+    gcp.delete_all_prefixes(bucket_name, strings.vm_progress)
+
+    print("Removing the shared-errors folder in bucket %s" % bucket_name)
+    gcp.delete_all_prefixes(bucket_name, strings.shared_errors)
+
+    hyparam_configs = json.load(open(hyparams_path))
+    iters = hyparam_configs["iterations"]
+    params = hyparam_configs["params"]
+    for index, param in enumerate(params):
+        wrapper = {}
+        wrapper["param"] = param
+        wrapper["current_iter"] = 0
+        wrapper["max_iter"] = iters
+        quick_send.send(strings.vm_progress_file, json.dumps(wrapper), strings.vm_progress + '/' + str(index))
+
+
+def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup_script_pth, quick_send):
     print(
         '''
         Building cluster for training
@@ -105,6 +131,13 @@ def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup
                 valid_zones.remove(zone)
         remaining_ranks = unused_ranks
 
+    # Writing errors to bucket
+    if workers != 0:
+        print("Writing error to shared errors in the cloud")
+        msg = "%d/%d workers built. All desired hyperparemters could not be explored" % \
+              (max_workers - len(remaining_ranks), max_workers)
+        quick_send.send(strings.cluster_error, msg, strings.shared_errors)
+
     print("%d/%d workers built" % (max_workers - len(remaining_ranks), max_workers))
 
 
@@ -129,14 +162,16 @@ if __name__ == '__main__':
     parser.add_argument("-t", '--tokenpth', help='The access_token path is used to download private repo from GitHub')
     parser.add_argument("-b", "--mkbucket", action="store_true", help="Create the bucket")
     parser.add_argument("-d", "--datapth", help="The path of the data to move into the bucket")
-    parser.add_argument("-v", "--rmvms", action="store_true", help="Remove the VM progress reports")
+    parser.add_argument("-p", "--hyparams", help="The path for the hyperparameter json")
     parser.add_argument("-w", "--workers", type=int, default=1, help="The number of VMs to spin up")
     parser.add_argument("-l", "--location", default="us-central1", help="The location for your bucket")
+    parser.add_argument("-m", '--tmppth', default="./tmp", help='The folder to store temporary files before moving to gcloud')
 
     args = parser.parse_args()
 
     pid = args.project_id
     bname = gen_bucket_name(pid, args.bucket_name)
+    quick_send = gcp.QuickSend(args.tmppth, bname)
 
     if args.mkbucket:
         make_bucket(bname, args.location)
@@ -150,9 +185,9 @@ if __name__ == '__main__':
         move_data(bname, args.datapth)
         hr()
 
-    if args.rmvms:
-        rmvms(pid)
+    if args.hyparams:
+        hyperparamters(bname, args.hyparams, quick_send)
         hr()
 
-    build_cluster(pid, bname, args.workers, args.machine_configs_pth, args.startup_script_pth)
+    build_cluster(pid, bname, args.workers, args.machine_configs_pth, args.startup_script_pth, quick_send)
     hr()
