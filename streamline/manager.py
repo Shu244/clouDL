@@ -31,7 +31,7 @@ class Hyperparameters:
         '''
 
         self.load_params = False
-        hyparam_copy = copy.deepcopy(self.raw_hyparams["params"])
+        hyparam_copy = copy.deepcopy(self.raw_hyparams["hyperparameters"])
         for key, value in hyparam_copy.items():
             if isinstance(value, list):
                 new_val = random.uniform(value[0], value[1])
@@ -62,18 +62,17 @@ def hyparam_search(hyparams, temp_path, quick_send, rank):
             train(hyparams.get_hyparams(), param_pth)
             hyparams.generate()
         except Exception as err:
-            timestr = time.strftime("%Y%m%d-%H%M%S")
-            filename = timestr + ('-vm%d' % rank)
-            msg ='''
-            An error occurred while searching for hyperparameters. The error is:
-            
-            {0}
-            
-            The hyperparamters being tested were:
-            
-            {1}
-            '''. format(str(err), json.dumps(hyparams.get_hyparams()))
-            quick_send(filename, msg, strings.shared_errors)
+            timestr = time.strftime("%m%d%Y-%H%M%S")
+            readable_timestr = time.strftime("%m/%d/%Y-%H:%M:%S")
+            filename = timestr + "-vm" + rank + "-iter" + str(start) + ".json"
+            msg = {
+                "error": str(err),
+                "hyperparameters": hyparams.get_hyparams(),
+                "time": readable_timestr
+            }
+            msg = json.dumps(msg)
+            quick_send.send(filename, msg, strings.shared_errors)
+            print(msg)
         start += 1
 
 
@@ -81,6 +80,8 @@ def train(a, b):
     print("training")
     print(a)
     print(b)
+    if not b:
+        raise Exception("Something terrible happened")
 
 
 if __name__ == '__main__':

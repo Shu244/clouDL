@@ -1,6 +1,6 @@
 {
   "iterations": 3,
-  "params" : [
+  "hyperparameters" : [
     {
       "LR": [0.01, 1],
       "MOMENTUM": 0.9,
@@ -16,7 +16,7 @@
       "folder": "../base"
     },
     {
-      "LR": true,
+      "LR": 0.01,
       "MOMENTUM": 0.9,
       "L2": 0.00001,
       "SCHEDULER_STEP": 110,

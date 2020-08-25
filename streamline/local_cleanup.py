@@ -1,7 +1,8 @@
-import argparse
-import json
 import gcp_interactions as gcp
+import argparse
 import strings
+import time
+import json
 
 
 def make_bucket(bucket_name, location):
@@ -57,23 +58,23 @@ def rmvms(bucket_name, folder_name):
 def hyperparamters(bucket_name, hyparams_path, quick_send):
     print(
         '''
-        Removes error and recreates progress folder to hold new hyperparamters. 
+        Removing error folder and recreating progress folder to hold new hyperparameters. 
         -bucket name: {0}
         -hyparams_pth: {1}
         '''.format(bucket_name, hyparams_path))
 
-    print("Removing the vm-progress folder in bucket %s" % bucket_name)
     gcp.delete_all_prefixes(bucket_name, strings.vm_progress)
+    print("Removed the vm-progress folder in bucket %s" % bucket_name)
 
-    print("Removing the shared-errors folder in bucket %s" % bucket_name)
     gcp.delete_all_prefixes(bucket_name, strings.shared_errors)
+    print("Removed the shared-errors folder in bucket %s" % bucket_name)
 
     hyparam_configs = json.load(open(hyparams_path))
     iters = hyparam_configs["iterations"]
-    params = hyparam_configs["params"]
-    for index, param in enumerate(params):
+    all_hyperparameters = hyparam_configs["hyperparameters"]
+    for index, hyperparameters in enumerate(all_hyperparameters):
         wrapper = {}
-        wrapper["param"] = param
+        wrapper["hyperparameters"] = hyperparameters
         wrapper["current_iter"] = 0
         wrapper["max_iter"] = iters
         quick_send.send(strings.vm_progress_file, json.dumps(wrapper), strings.vm_progress + '/' + str(index))
@@ -133,9 +134,13 @@ def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup
     # Writing errors to bucket
     if workers != 0:
         print("Writing error to shared errors in the cloud")
-        msg = "%d/%d workers built. All desired hyperparemters could not be explored" % \
+        error_msg = "%d/%d workers built. All desired hyperparemters could not be explored" % \
               (max_workers - len(remaining_ranks), max_workers)
-        quick_send.send(strings.cluster_error, msg, strings.shared_errors)
+        msg = {
+            "error": error_msg,
+            "time": time.strftime("%m/%d/%Y-%H:%M:%S")
+        }
+        quick_send.send(strings.cluster_error, json.dumps(msg), strings.shared_errors)
 
     print("%d/%d workers built" % (max_workers - len(remaining_ranks), max_workers))
 
@@ -151,6 +156,11 @@ def hr():
 # Example:
 # python local_cleanup.py stoked-brand-285120 bucket-name1 ./configs.jso  ./startup.sh ./access_token  -b -d ./fake_data.tar.gz -w 2 -l us-central1
 if __name__ == '__main__':
+    push_latest_code = input("VMs will pull from your github, is the desired version the latest commit on master? [yes | no]")
+    if push_latest_code.lower() not in ["yes", "y"]:
+        print("Please push your desired code before continuing")
+        exit(0)
+
     parser = argparse.ArgumentParser(description="Prepping buckets and spinning up VMs to train model.")
 
     parser.add_argument('project_id', help='Project ID')

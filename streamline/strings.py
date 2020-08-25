@@ -10,5 +10,5 @@ secrets = "secrets"
 
 # Google cloud storage file names
 vm_progress_file = "progress.json"
-cluster_error = "cluster_startup_err.txt"
+cluster_error = "cluster_startup_err.json"
 params_file = "params.pt"
