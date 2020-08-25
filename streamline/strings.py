@@ -1,3 +1,5 @@
+# Keep UI facing strings here
+
 # Google cloud storage folder names
 data = "data"
 vm_progress = "vm-progress"
@@ -9,3 +11,4 @@ secrets = "secrets"
 # Google cloud storage file names
 vm_progress_file = "progress.json"
 cluster_error = "cluster_startup_err.txt"
+params_file = "params.pt"

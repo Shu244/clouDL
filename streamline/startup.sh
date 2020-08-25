@@ -24,6 +24,7 @@ git clone https://shu244:$token@github.com/shu244/GCP_AI.git
 cd GCP_AI
 python base.py
 #cd GCP_AI/streamline
+#mkdir tmp
 #python manager.py RANK BUCKET_NAME
 
 export NAME=$(curl -X GET http://metadata.google.internal/computeMetadata/v1/instance/name -H 'Metadata-Flavor: Google')

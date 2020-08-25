@@ -40,6 +40,7 @@ def upload_folder(bucket_name, src, dest):
     This function should not be used to push training data.
     Instead, archive and zip training folder so it can be pushed as one file
     For safety, dest be empty
+    Raises FileNotFoundError when necessary.
 
     :param bucket_name: name of bucket
     :param src: source folder
@@ -64,6 +65,7 @@ def upload_folder(bucket_name, src, dest):
 def upload_file(bucket_name, src, dest):
     '''
     Upload a file to Google cloud storage
+    Raises FileNotFoundError when necessary.
 
     :param bucket_name: Bucket name
     :param src: Path of the file to upload
@@ -80,6 +82,7 @@ def download_folder(bucket_name, src, dest):
     '''
     Moves content of src folder in GCP into local dest folder.
     For safety, dest must be empty.
+    Raises FileNotFoundError when necessary.
 
     :param bucket: Bucket name
     :param src: Source folder in GCP storage
@@ -110,7 +113,8 @@ def download_folder(bucket_name, src, dest):
 
 def download_file(bucket_name, src, dest):
     '''
-    Downloads a file from Google Cloud Storage
+    Downloads a file from Google Cloud Storage.
+    Raises FileNotFoundError when necessary.
 
     :param bucket_name: Name of the bucket
     :param src: Path of the file

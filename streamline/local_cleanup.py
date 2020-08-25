@@ -1,6 +1,5 @@
 import argparse
 import json
-import os
 import gcp_interactions as gcp
 import strings
 
