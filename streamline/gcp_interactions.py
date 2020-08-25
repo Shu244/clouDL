@@ -31,7 +31,6 @@ def upload_folder_helper(bucket, src, dest):
             remote_path = os.path.join(dest, basename)
             blob = bucket.blob(remote_path)
             blob.upload_from_filename(local_obj)
-            print('Moved ', remote_path)
 
 
 def upload_folder(bucket_name, src, dest):
@@ -97,11 +96,13 @@ def download_folder(bucket_name, src, dest):
     for blob in blobs:
         # name will be in the format of src/folder1/.../folderN/file.ext
         name = blob.name
+        print(name)
 
         # Ignoring the folder itself
         no_src = name[name.find('/') + 1:]
         if no_src == '':
             continue
+            print("skipping one ", name)
 
         path = os.path.join(dest, no_src)
         if name.count('/') > 1:
@@ -110,6 +111,9 @@ def download_folder(bucket_name, src, dest):
 
         blob.download_to_filename(path)
 
+# TODO, the blob name will include the entire prefix given to it. Thus, checking for first / will not work
+download_folder("stoked-brand-285120-test1", "vm-progress/0", "./tmp")
+exit()
 
 def download_file(bucket_name, src, dest):
     '''
