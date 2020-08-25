@@ -3,6 +3,9 @@
 echo "------------------------------------------STARTING--------------------------------------------------"
 sudo /opt/deeplearning/install-driver.sh to install drivers
 
+# The y flag installs without prompts
+conda install -y pathlib
+
 ## Takes a while for user to get created. So I may need to sleep. This is acutually not necessary though
 #cd home
 #cd shuhaolai18

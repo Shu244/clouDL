@@ -21,7 +21,8 @@ class Hyperparameters:
         else:
             # generate new values
             # self.load_params = False set in the generate method
-            self.cur_hyparams = self.generate()
+            # self.cur_hyparams is also set
+            self.generate()
 
         self.raw_hyparams[self.cur_val] = None
 
@@ -72,6 +73,7 @@ def hyparam_search(hyparams, temp_path, quick_send, rank):
             }
             msg = json.dumps(msg)
             quick_send.send(filename, msg, strings.shared_errors)
+            print("Writing the following msg to shared errors folder in Google cloud")
             print(msg)
         start += 1
 
