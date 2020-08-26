@@ -26,7 +26,7 @@ def upload_folder_helper(bucket, src, dest):
         basename = os.path.basename(local_obj)
         if os.path.isdir(local_obj):
             # local_obj is a folder
-            upload_folder_helper(bucket, local_obj, dest + "/" + basename)
+            upload_folder_helper(bucket, local_obj, os.path.join(dest, basename))
         else:
             remote_path = os.path.join(dest, basename)
             blob = bucket.blob(remote_path)
@@ -50,11 +50,14 @@ def upload_folder(bucket_name, src, dest):
 
     bucket = storage_client.bucket(bucket_name)
 
+    if dest[-1] != '/':
+        dest = dest + '/'
+
     # Ensuring empty dest folder
     blobs = bucket.list_blobs(prefix=dest)
     for blob in blobs:
         # Ignoring the folder itself
-        if blob.name[blob.name.find('/') + 1:] == '':
+        if not blob.name[len(dest):]:
             continue
         raise ValueError("Dest folder must be empty")
 
@@ -91,29 +94,28 @@ def download_folder(bucket_name, src, dest):
     if not os.path.isdir(dest) or len(os.listdir(dest)) != 0:
         raise ValueError("Dest folder must exists and be empty")
 
+    if src[-1] != '/':
+        src = src + '/'
+
     bucket = storage_client.bucket(bucket_name)
     blobs = bucket.list_blobs(prefix=src)  # Get list of files
     for blob in blobs:
         # name will be in the format of src/folder1/.../folderN/file.ext
         name = blob.name
-        print(name)
 
-        # Ignoring the folder itself
-        no_src = name[name.find('/') + 1:]
-        if no_src == '':
+        # Ignoring the path to the folder
+        no_path = name[len(src):]
+        if not no_path:
             continue
-            print("skipping one ", name)
 
-        path = os.path.join(dest, no_src)
-        if name.count('/') > 1:
+        local_path = os.path.join(dest, no_path)
+        if no_path.count('/') > 0:
             # Create nested directories
-            pathlib.Path(path[:path.rfind('/')]).mkdir(parents=True, exist_ok=True)
+            only_dir = local_path[:local_path.rfind('/')]
+            pathlib.Path(only_dir).mkdir(parents=True, exist_ok=True)
 
-        blob.download_to_filename(path)
+        blob.download_to_filename(local_path)
 
-# TODO, the blob name will include the entire prefix given to it. Thus, checking for first / will not work
-download_folder("stoked-brand-285120-test1", "vm-progress/0", "./tmp")
-exit()
 
 def download_file(bucket_name, src, dest):
     '''
@@ -130,7 +132,7 @@ def download_file(bucket_name, src, dest):
     blob.download_to_filename(os.path.join(dest, filename))
 
 
-def delete_all_prefixes(bucket_name, folder):
+def delete_all_prefixes(bucket_name, prefix):
     '''
     Delete folder and all of its content in Google Cloud Storage
 
@@ -139,7 +141,7 @@ def delete_all_prefixes(bucket_name, folder):
     '''
 
     bucket = storage_client.bucket(bucket_name)
-    blobs = bucket.list_blobs(prefix=folder)
+    blobs = bucket.list_blobs(prefix=prefix)
     for blob in blobs:
         blob.delete()
 

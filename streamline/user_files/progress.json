@@ -1,0 +1,6 @@
+{
+  "compare": "val_accuracy",
+  "goal" : "max",
+  "epoch": [],
+  "val_accuracy": []
+}
