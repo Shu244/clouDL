@@ -12,8 +12,6 @@ conda install -y pathlib
 #cd home
 #cd shuhaolai18
 
-
-
 RANK=$(curl http://metadata/computeMetadata/v1/instance/attributes/rank -H "Metadata-Flavor: Google")
 BUCKET_NAME=$(curl http://metadata/computeMetadata/v1/instance/attributes/bucket -H "Metadata-Flavor: Google")
 echo "The rank is $RANK"
@@ -24,8 +22,8 @@ cd code
 mkdir data
 
 gsutil cp gs://$BUCKET_NAME/secrets/access_token ./data
-token=$(<./data/access_token)
-git clone https://shu244:$token@github.com/shu244/GCP_AI.git
+TOKEN=$(<./data/access_token)
+git clone https://shu244:$TOKEN@github.com/shu244/GCP_AI.git
 
 #cd GCP_AI
 #python base.py

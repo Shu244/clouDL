@@ -8,7 +8,7 @@ import time
 import json
 import os
 
-from GCP_AI.MNIST_test import run
+from MNIST_test import run
 
 
 '''
