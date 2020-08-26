@@ -8,7 +8,8 @@ import time
 import json
 import os
 
-from MNIST_test import run
+from GCP_AI.MNIST_test import run
+
 
 '''
 Best model and VM progress will save the same items:

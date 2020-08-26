@@ -220,12 +220,12 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
             }
         ],
 
-        "guestAccelerators": [
-            {
-                "acceleratorCount": configs["gpu_count"],
-                "acceleratorType": accelerator_type
-            }
-        ],
+        # "guestAccelerators": [
+        #     {
+        #         "acceleratorCount": configs["gpu_count"],
+        #         "acceleratorType": accelerator_type
+        #     }
+        # ],
 
         "scheduling": {
             "preemptible": configs["preemptible"],
