@@ -107,7 +107,7 @@ imshow(out, title='Examples of training image')
 
 
 ############################################################
-# Training functions stopping
+# Training functions
 ############################################################
 
 

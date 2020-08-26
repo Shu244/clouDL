@@ -39,7 +39,7 @@ def upload_folder(bucket_name, src, dest):
     This function should not be used to push training data.
     Instead, archive and zip training folder so it can be pushed as one file
     For safety, dest be empty
-    Raises FileNotFoundError when necessary.
+    Raises FileNotFoundError when src file(s) does not exists.
 
     :param bucket_name: name of bucket
     :param src: source folder
@@ -67,7 +67,7 @@ def upload_folder(bucket_name, src, dest):
 def upload_file(bucket_name, src, dest):
     '''
     Upload a file to Google cloud storage
-    Raises FileNotFoundError when necessary.
+    Raises FileNotFoundError if source file does not exists.
 
     :param bucket_name: Bucket name
     :param src: Path of the file to upload
@@ -84,15 +84,14 @@ def download_folder(bucket_name, src, dest):
     '''
     Moves content of src folder in GCP into local dest folder.
     For safety, dest must be empty.
-    Raises FileNotFoundError when necessary.
 
     :param bucket: Bucket name
     :param src: Source folder in GCP storage
     :param dest: local destination folder
     '''
 
-    if not os.path.isdir(dest) or len(os.listdir(dest)) != 0:
-        raise ValueError("Dest folder must exists and be empty")
+    # if not os.path.isdir(dest) or len(os.listdir(dest)) != 0:
+    #     raise ValueError("Dest folder must exists and be empty")
 
     if src[-1] != '/':
         src = src + '/'

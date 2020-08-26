@@ -1,6 +1,7 @@
 import gcp_interactions as gcp
 import argparse
 import strings
+import copy
 import time
 import json
 
@@ -55,6 +56,14 @@ def rmvms(bucket_name, folder_name):
     gcp.delete_all_prefixes(bucket_name, folder_name)
 
 
+def fill(big, small):
+    big_copy = copy.deepcopy(big)
+    for key in big_copy:
+        if key in small:
+            big_copy[key] = small[key]
+    return big_copy
+
+
 def hyperparamters(bucket_name, hyparams_path, quick_send):
     print(
         '''
@@ -64,20 +73,22 @@ def hyperparamters(bucket_name, hyparams_path, quick_send):
         '''.format(bucket_name, hyparams_path))
 
     gcp.delete_all_prefixes(bucket_name, strings.vm_progress)
-    print("Removed the vm-progress folder in bucket %s" % bucket_name)
-
     gcp.delete_all_prefixes(bucket_name, strings.shared_errors)
-    print("Removed the shared-errors folder in bucket %s" % bucket_name)
 
     hyparam_configs = json.load(open(hyparams_path))
     iters = hyparam_configs["iterations"]
     all_hyperparameters = hyparam_configs["hyperparameters"]
+    first = all_hyperparameters[0]
     for index, hyperparameters in enumerate(all_hyperparameters):
+        if index == 0:
+            filled = hyperparameters
+        else:
+            filled = fill(first, hyperparameters)
         wrapper = {}
-        wrapper["hyperparameters"] = hyperparameters
+        wrapper["hyperparameters"] = filled
         wrapper["current_iter"] = 0
         wrapper["max_iter"] = iters
-        quick_send.send(strings.vm_progress_file, json.dumps(wrapper), strings.vm_progress + '/' + str(index))
+        quick_send.send(strings.vm_hyparams_report, json.dumps(wrapper), strings.vm_progress + '/' + str(index))
 
 
 def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup_script_pth, quick_send):
@@ -122,7 +133,7 @@ def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup
         for op in operations:
             zone = op['testing-zone']
             rank = op['vm-rank']
-            passed = gcp. wait_for_operation(project_id, op['name'], zone)
+            passed = gcp.wait_for_operation(project_id, op['name'], zone)
             if passed:
                 workers -= 1
             else:
@@ -153,26 +164,17 @@ def hr():
     print('----'*20)
 
 
-# Example:
-# python local_cleanup.py stoked-brand-285120 bucket-name1 ./configs.jso  ./startup.sh ./access_token  -b -d ./fake_data.tar.gz -w 2 -l us-central1
 if __name__ == '__main__':
-    push_latest_code = input("VMs will pull from your github, is the desired version the latest commit on master? [yes | no]")
-    if push_latest_code.lower() not in ["yes", "y"]:
-        print("Please push your desired code before continuing")
-        exit(0)
-
     parser = argparse.ArgumentParser(description="Prepping buckets and spinning up VMs to train model.")
 
     parser.add_argument('project_id', help='Project ID')
     parser.add_argument('bucket_name', help='The name of the bucket')
-    parser.add_argument('machine_configs_pth', help='The json specifying the configs of the machines used for training')
-    parser.add_argument('startup_script_pth', help='The bash start up script to run on the VMs')
-
+    parser.add_argument("-c", '--cluster', nargs=3,
+                        help='Build VM cluster for training. Requires number of workers, machine configs path, and startup script path')
     parser.add_argument("-t", '--tokenpth', help='The access_token path is used to download private repo from GitHub')
     parser.add_argument("-b", "--mkbucket", action="store_true", help="Create the bucket")
     parser.add_argument("-d", "--datapth", help="The path of the data to move into the bucket")
     parser.add_argument("-p", "--hyparams", help="The path for the hyperparameter json")
-    parser.add_argument("-w", "--workers", type=int, default=1, help="The number of VMs to spin up")
     parser.add_argument("-l", "--location", default="us-central1", help="The location for your bucket")
     parser.add_argument("-m", '--tmppth', default="./tmp", help='The folder to store temporary files before moving to gcloud')
 
@@ -198,5 +200,15 @@ if __name__ == '__main__':
         hyperparamters(bname, args.hyparams, quick_send)
         hr()
 
-    build_cluster(pid, bname, args.workers, args.machine_configs_pth, args.startup_script_pth, quick_send)
-    hr()
+    if args.cluster:
+        push_latest_code = input(
+            "VMs will pull from your github, is the desired version the latest commit on master? [yes | no]")
+        if push_latest_code.lower() not in ["yes", "y"]:
+            print("Please push your desired code before continuing")
+            exit(0)
+
+        num_worker = int(args.cluster[0])
+        machine_configs_pth = args.cluster[1]
+        startup_script_pth = args.cluster[2]
+        build_cluster(pid, bname, num_worker, machine_configs_pth, startup_script_pth, quick_send)
+        hr()
