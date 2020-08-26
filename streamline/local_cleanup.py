@@ -129,6 +129,8 @@ def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup
                 print("Failed to build a worker in zone %s, trying a different zone" % zone)
                 unused_ranks.append(rank)
                 valid_zones.remove(zone)
+            # Hopefully prevents server side errors in GCP
+            time.sleep(3)
 
         for op in operations:
             zone = op['testing-zone']

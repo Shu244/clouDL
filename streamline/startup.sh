@@ -3,6 +3,8 @@
 echo "------------------------------------------STARTING--------------------------------------------------"
 sudo /opt/deeplearning/install-driver.sh to install drivers
 
+export PATH="/opt/conda/bin:$PATH"
+
 # The y flag installs without prompts
 conda install -y pathlib
 
@@ -10,7 +12,7 @@ conda install -y pathlib
 #cd home
 #cd shuhaolai18
 
-export PATH="/opt/conda/bin:$PATH"
+
 
 RANK=$(curl http://metadata/computeMetadata/v1/instance/attributes/rank -H "Metadata-Flavor: Google")
 BUCKET_NAME=$(curl http://metadata/computeMetadata/v1/instance/attributes/bucket -H "Metadata-Flavor: Google")
