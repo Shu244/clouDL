@@ -25,8 +25,6 @@ gsutil cp gs://$BUCKET_NAME/secrets/access_token ./data
 TOKEN=$(<./data/access_token)
 git clone https://shu244:$TOKEN@github.com/shu244/GCP_AI.git
 
-#cd GCP_AI
-#python base.py
 cd GCP_AI/streamline
 mkdir tmp
 python manager.py $RANK $BUCKET_NAME

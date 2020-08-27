@@ -8,7 +8,7 @@ import time
 import json
 import os
 
-from MNIST_test import run
+from ai.MNIST_test import run
 
 
 '''
