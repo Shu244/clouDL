@@ -184,7 +184,7 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
         family=configs['family']).execute()
     source_image = image_response['selfLink']
 
-    machine_type = "zones/%s/machineTypes/n1-standard-2" % zone
+    machine_type = "zones/%s/machineTypes/n1-standard-%d" % (zone, configs["cpu_count"])
     accelerator_type = "zones/%s/acceleratorTypes/%s" % (zone, configs['gpu'])
 
     subnetwork = "regions/%s/subnetworks/default" % zone[:zone.rfind('-')]
@@ -220,12 +220,12 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
             }
         ],
 
-        # "guestAccelerators": [
-        #     {
-        #         "acceleratorCount": configs["gpu_count"],
-        #         "acceleratorType": accelerator_type
-        #     }
-        # ],
+        "guestAccelerators": [
+            {
+                "acceleratorCount": configs["gpu_count"],
+                "acceleratorType": accelerator_type
+            }
+        ],
 
         "scheduling": {
             "preemptible": configs["preemptible"],

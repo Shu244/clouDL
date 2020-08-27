@@ -5,5 +5,10 @@
   "family": "pytorch-1-4-cu101",
   "diskSizeGb": "100",
   "preemptible": true,
-  "name_prefix": "vm"
+  "name_prefix": "vm",
+  "cpu_count": 2,
+  "comments": [
+    "cpu counts must be a power of 2",
+    "quota limits me to 1 GPU currently"
+  ]
 }
