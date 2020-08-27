@@ -118,7 +118,9 @@ def run(manager, param_pth):
 
 
 if __name__ == '__main__':
-    from streamline.test_manager import Manager
+    # Must run MNIST_test.py with m flag for this relative import to work:
+    # python -m streamline.ai.MNIST_test.py
+    from ..test_manager import Manager
     manager = Manager({
         "BATCH_SIZE": 64,
         "EPOCHS": 5,

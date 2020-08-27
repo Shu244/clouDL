@@ -6,7 +6,7 @@ sudo /opt/deeplearning/install-driver.sh to install drivers
 export PATH="/opt/conda/bin:$PATH"
 
 # The y flag installs without prompts
-conda install -y pathlib
+# conda install -y pathlib
 
 ## Takes a while for user to get created. So I may need to sleep. This is acutually not necessary though
 #cd home

@@ -1,4 +1,5 @@
 import gcp_interactions as gcp
+import traceback
 import argparse
 import strings
 import random
@@ -262,6 +263,7 @@ def hyparam_search(manager):
             readable_timestr = time.strftime("%m/%d/%Y-%H:%M:%S")
             filename = timestr + ("-vm%d" % rank) + "-iter" + str(start) + ".json"
             msg = {
+                "traceback": traceback.format_exc(),
                 "error": str(err),
                 "hyperparameters": manager.get_hyparams(),
                 "progress": manager.tracker.get_report(),
@@ -271,6 +273,9 @@ def hyparam_search(manager):
             quick_send.send(filename, msg, strings.shared_errors)
             print("Writing the following msg to shared errors folder in Google cloud")
             print(msg)
+
+            manager.reset()
+            manager.reset_cloud_progress()
         start += 1
 
 
