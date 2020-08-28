@@ -4,6 +4,7 @@ import argparse
 import strings
 import json
 import os
+import re
 
 
 def hr():
@@ -104,21 +105,22 @@ class Errors:
         self.path = downloader.cplt_tmppth(strings.shared_errors)
         self.downloader.download(strings.shared_errors)
 
-    def count(self):
+    def get_count(self):
         return len(os.listdir(self.path))
 
     def view(self, limit=None):
-        count = self.count()
+        count = self.get_count()
 
-        print('Number of errors %d' % self.count())
+        hr()
+        print('Number of errors: %d' % count)
 
         if not limit or limit > count:
-            limit = self.count
+            limit = count
 
         err_files = os.listdir(self.path)
         for i in range(0, limit):
             hr()
-            print("Error %d" % i)
+            print("Error %d:" % i)
             err_str = open(os.path.join(self.path, err_files[i]), "r").read()
             print(err_str)
 
@@ -160,9 +162,10 @@ class Best_Model:
             return
 
         best_progress, best_hyparams = result
+        hr()
         print("Best %s is %s" % (best_progress.compare, str(best_progress.best)))
         print("Hyperparameter section:")
-        print(best_hyparams.meaningful)
+        print(json.dumps(best_hyparams.meaningful))
         print("Hyperparameters used:")
         print(best_hyparams.cur_meaningful_vals())
         plot_vals(best_progress.progress[x_label], best_progress.compare_vals,
@@ -175,7 +178,8 @@ class Results:
         self.path = downloader.cplt_tmppth(strings.results)
         self.downloader.download(strings.results)
 
-    def get_progress(self, folder_pth):
+    def get_vm_progress(self, folder_name):
+        folder_pth = os.path.join(self.path, folder_name)
         filenames = os.listdir(folder_pth)
         progress_list = []
         for filename in filenames:
@@ -191,11 +195,21 @@ class Results:
         if len(folder_names) == 0:
             return None
 
-        all_progress = [self.get_progress(folder_name) for folder_name in folder_names]
+        '''
+        Shape of all_progress:
+        [
+            [(Progress, filename), ..., (Progress, filename)],
+            .
+            .
+            .
+            [(Progress, filename), ..., (Progress, filename)]
+        ]
+        '''
+        all_progress = [self.get_vm_progress(folder_name) for folder_name in folder_names]
         dictionary = dict(zip(folder_names, all_progress))
         return dictionary
 
-    def subplot(self, main_title, x_label, xrange, yrange, progress_list):
+    def subplot(self, main_title, x_label, yrange, progress_list):
         '''
         Creates subplots for the results from one VM
 
@@ -211,32 +225,32 @@ class Results:
         # ceiling division
         rows = (num + cols - 1 ) // cols
 
-        fig, axs = plt.subplots(rows, cols)
+        fig, axs = plt.subplots(nrows=rows, ncols=cols, sharex=True, sharey=True)
         fig.suptitle(main_title)
 
-        index = 0
-        for row in range(0, rows):
-            for col in range(0, cols):
-                progress, filename = progress_list[index]
-                index += 1
+        for index, (progress, filename) in enumerate(progress_list):
+            x = progress.progress[x_label]
+            y = progress.compare_vals
 
-                x = progress.progress[x_label]
-                y = progress.compare_vals
+            row = index // cols
+            col = index - row * cols
 
+            if rows == 1:
+                subplot = axs[col]
+            else:
                 subplot = axs[row, col]
-                subplot.plot(x, y)
-                subplot.set_title('%s: %s vs %s' % (filename, x_label, progress.compare))
-                subplot.set_ylim(yrange)
-                subplot.set_xlim(xrange)
+            subplot.plot(x, y)
+            id = re.search("(vm[0-9]+)-([0-9]+)", filename).group(2)
+            subplot.set_title('id: %s' % id)
+            subplot.set_ylim(yrange)
 
-        for ax in axs.flat:
-            ax.set(xlabel=x_label, ylabel=progress_list[0][0].compare)
+        # Credit to https://stackoverflow.com/a/53172335
+        fig.add_subplot(111, frameon=False)
+        plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
+        plt.xlabel(x_label)
+        plt.ylabel(progress_list[0][0].compare)
 
-        # Hide x labels and tick labels for top plots and y ticks for right plots.
-        for ax in axs.flat:
-            ax.label_outer()
-
-    def view(self, x_label, xrange, yrange):
+    def view(self, x_label, yrange):
         progress_dictionary = self.get_all_progress()
 
         if not progress_dictionary:
@@ -245,7 +259,7 @@ class Results:
 
         for folder_name, progress_list in progress_dictionary.items():
             main_title = 'For VM %s' % folder_name
-            self.subplot(main_title, x_label, xrange, yrange, progress_list)
+            self.subplot(main_title, x_label, yrange, progress_list)
         plt.show()
 
 
@@ -257,9 +271,8 @@ if __name__ == '__main__':
                         help='The folder to store temporary files downloaded from the cloud')
     parser.add_argument("-e", '--errs', type=int,
                         help='View the shared errors. Provide an int to limit to the num of errors shown')
-    parser.add_argument("-b", '--best', default="epochs", help='View the best model. You can provide the x value to plot by')
-    parser.add_argument("-r", '--results', default="epochs", help='View the results. You can provide the x value to plot by')
-    parser.add_argument("-x", '--xrange', nargs=2, type=int, default=[0, None], help='Provide x range for plotting')
+    parser.add_argument("-b", '--best', help='View the best model. You can provide the x value to plot by')
+    parser.add_argument("-r", '--results', help='View the results. You can provide the x value to plot by')
     parser.add_argument("-y", '--yrange', nargs=2, type=int, default=[0, 100], help='Provide x range for plotting')
 
 
@@ -275,12 +288,6 @@ if __name__ == '__main__':
         best.view(args.best)
 
     if args.results:
-        xrange = args.xrange
         yrange = args.yrange
-
-        if not xrange[1]:
-            print("Please provide a x range")
-            exit()
-
         results = Results(downloader)
-        results.view(args.results, xrange, yrange)
+        results.view(args.results, yrange)

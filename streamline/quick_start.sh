@@ -33,4 +33,11 @@ elif [ "$MODE" = "manual-test" ]; then
     --hyparams ./user_files/hyperparameters.json \
     --location us-central1
 
+elif [ "$MODE" = "analyze" ]; then
+
+  python analyze.py stoked-brand-285120-$BUCKET_NAME \
+    --errs 10 \
+    --best epochs \
+    --results epochs \
+    --yrange 95 100
 fi

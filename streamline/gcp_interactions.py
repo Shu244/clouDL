@@ -102,10 +102,10 @@ def download_folder(bucket_name, src, dest, ignore_filename=None):
         # name will be in the format of src/folder1/.../folderN/file.ext
         name = blob.name
 
-        if not ignore_filename and os.path.basename(name) == ignore_filename:
+        if ignore_filename and os.path.basename(name) == ignore_filename:
             continue
 
-        # Ignoring the path to the folder
+        # Ignoring the path to the src folder
         no_path = name[len(src):]
         if not no_path:
             continue
@@ -114,7 +114,12 @@ def download_folder(bucket_name, src, dest, ignore_filename=None):
         if no_path.count('/') > 0:
             # Create nested directories
             only_dir = local_path[:local_path.rfind('/')]
-            pathlib.Path(only_dir).mkdir(parents=True, exist_ok=True)
+            if not os.path.isdir(only_dir):
+                pathlib.Path(only_dir).mkdir(parents=True, exist_ok=True)
+
+        # The blob is a folder in the cloud
+        if os.path.isdir(local_path):
+            continue
 
         blob.download_to_filename(local_path)
 
