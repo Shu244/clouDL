@@ -8,11 +8,8 @@ Remember to the following when using Manger:
 5) Use <code>Manager.add_progress(key, value)</code> freely
 6) Load the parameters into the model when it is provided
 
-Progress should be saved at the end of an epoch instead of the beginning
-and epochs should start at 0. This is not mandatory but saves unnecessary saving and maintains true epoch value when reloading state.
+Progress should be saved at the end of an epoch instead of the beginning. This is not mandatory but prevents unnecessary saving.
 
-The starting epoch is calculated by counting the number of elements added to a key using <code>Manager.add_progress(key, value)</code>.
-In order to keep track of epochs, the method must be used; otherwise, the starting epoch will be 0 by default when reloading from a state (this will not
-throw an error).
-
-The <code>analyze.py</code> file assumes "epochs" is a value being reported in the progress.
+The key "epochs" should be used and managed via <code>Manager.add_progress(key, value)</code>. This will help
+restarts start on the proper epoch. If not used, an approximate start epoch will be calculated, which relies on existing progress
+and epochs starting at 0.

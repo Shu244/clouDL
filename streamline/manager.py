@@ -185,13 +185,21 @@ class Tracker:
         self.report["compare"] = compare
         self.report["goal"] = goal
 
-    def start_epoch(self):
+    def approximate_start_epoch(self):
         dict_keys = list(self.report.keys())
         dict_keys.remove("compare")
         dict_keys.remove("goal")
         if len(dict_keys) == 0:
             return 0
         return len(self.report[dict_keys[0]])
+
+    def start_epoch(self):
+        epochs = "epochs"
+        if epochs in self.report:
+            # +1 since we have already completed the last epoch in the list
+            return self.report[epochs][-1] + 1
+        else:
+            return self.approximate_start_epoch()
 
 
 class Hyperparameters:
