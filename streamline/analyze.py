@@ -23,20 +23,73 @@ class Downloader:
         self.bucket_name = bucket_name
         self.temp_path = temp_path
 
-    def download(self, folder_name):
-        gcp.download_folder(self.bucket_name, folder_name, self.complete_tmppth(folder_name))
+    def download(self, folder_name, ignore_filename=None):
+        gcp.download_folder(self.bucket_name, folder_name, self.cplt_tmppth(folder_name), None)
 
-    def complete_tmppth(self, folder):
+    def cplt_tmppth(self, folder):
         return os.path.join(self.temp_path, folder)
+
+
+class Hyperparameters:
+    def __init__(self, hyparams_path):
+        self.hyparams = json.load(open(hyparams_path))
+        self.meaningful = self.meaningful_sec()
+
+    def meaningful_sec(self):
+        hyparam_sec = self.hyparams["hyperparameters"]
+        meaningful = {}
+        for key, value in hyparam_sec.items():
+            if isinstance(value, list):
+                meaningful[key] = value
+        return meaningful
+
+    def cur_vals(self):
+        return self.hyparams["current_values"]
+
+    def cur_meaningful_vals(self):
+        cur_meaningful = {}
+        cur_vals = self.hyparams["current_values"]
+        for key in self.meaningful:
+            cur_meaningful[key] = cur_vals[key]
+        return cur_meaningful
+
+
+class Progress:
+    def __init__(self, progress_pth):
+        self.progress = json.load(open(progress_pth))
+        self.compare = self.progress["compare"]
+        self.goal = self.progress["goal"]
+        self.compare_vals = self.progress[self.compare]
+        self.best = max(self.compare_vals) if self.goal == "max" else min(self.compare_vals)
+
+    def get_best(self):
+        return self.best
+
+    def worse(self, val):
+        if self.goal == 'max':
+            if val > self.best:
+                return True
+            else:
+                return False
+        if self.goal == 'min':
+            if val < self.best:
+                return True
+            else:
+                return False
+
+    def get_compare_goal(self):
+        return self.compare, self.goal
 
 
 class Errors:
     def __init__(self, downloader):
         self.downloader = downloader
-        self.path = downloader.complete_tmppth(strings.shared_errors)
-        os.mkdir(self.path)
+        self.path = downloader.cplt_tmppth(strings.shared_errors)
+        if not os.path.isdir(self.path):
+            self.download()
 
     def download(self):
+        os.mkdir(self.path)
         self.downloader.download(strings.shared_errors)
 
     def count(self):
@@ -45,7 +98,7 @@ class Errors:
     def view_num(self):
         print('Number of errors %d' % self.count())
 
-    def view(self, limit=None):
+    def view_errors(self, limit=None):
         count = self.count()
         if not limit or limit > count:
             limit = self.count
@@ -59,52 +112,71 @@ class Errors:
 
 
 class Best_Model:
+
     def __init__(self, downloader):
         self.downloader = downloader
-        self.path = downloader.complete_tmppth(strings.best_model)
+        self.path = downloader.cplt_tmppth(strings.best_model)
+        if not os.path.isdir(self.path):
+            self.download()
+
+    def download(self):
         os.mkdir(self.path)
+        # Ignores param.pt file
+        self.downloader.download(strings.best_model, strings.params_file)
 
-    def view_best(self):
+    def get_best(self):
         folder_names = os.listdir(self.path)
-        best = None
-        best_folder = None
-        compare = None
-        goal = None
 
-        all_hyparams_secs = []
+        if len(folder_names) == 0:
+            return None
+
+        best_progress = Progress(os.path.join(self.path, folder_names[0], strings.vm_progress_report))
+        best_hyparams = Hyperparameters(os.path.join(self.path, folder_names[0], strings.vm_hyparams_report))
 
         for index, folder_name in enumerate(folder_names):
-            progress_path = os.path.join(self.path, folder_name, strings.vm_progress_report)
-            hyparams_path = os.path.join(self.path, folder_name, strings.vm_hyparams_report)
-            progress_report = json.load(open(progress_path))
-            hyparam_report = json.load(open(hyparams_path))
-
-            all_hyparams_secs.append(hyparam_report["hyperparameters"])
-
             if index == 0:
-                compare = progress_report["compare"]
-                goal = progress_report["goal"]
-            val = progress_report[compare]
-            if goal == "max":
-                if not best or val > best:
-                    best = val
-                    best_folder = folder_name
-            else:
-                if not best or val < best:
-                    best = val
-                    best_folder = folder_name
-        best_hyparams = json.load(open(os.path.join(self.path, best_folder, strings.vm_hyparams_report)))
+                continue
 
-        hr()
-        print("Compare: %s, Goal: %s" % (compare, goal))
-        print("Best value: %s" % str(best))
-        print("Best hyperparameters: ")
-        print(json.dumps(best_hyparams))
+            progress = Progress(os.path.join(self.path, folder_name, strings.vm_progress_report))
 
-        hr()
-        print("Hyperparameter grid searched by each VM:")
-        # TODO
+            if best_progress.worse(progress.best):
+                best_progress = progress
+                best_hyparams = Hyperparameters(os.path.join(self.path, folder_name, strings.vm_progress_report))
 
+        return best_progress, best_hyparams
+
+    def view_best(self):
+        result = self.get_best()
+
+        if not result:
+            print("No best model")
+            return
+
+        best_progress, best_hyparams = result
+        print("Best %s is %s" % (best_progress.compare, str(best_progress.best)))
+        print("Hyperparameter section:")
+        print(best_hyparams.meaningful)
+        print("Hyperparameters used:")
+        print(best_hyparams.cur_meaningful_vals())
+        plot_vals(best_progress["epochs"], best_progress.compare_vals, "Best Progress", best_progress.compare)
+
+
+class Results:
+    def __init__(self, downloader):
+        self.downloader = downloader
+        self.path = downloader.cplt_tmppth(strings.results)
+        if not os.path.isdir(self.path):
+            self.download()
+
+    def download(self):
+        os.mkdir(self.path)
+        self.downloader.download(strings.results)
+
+    def get_all_results(self):
+
+
+    def view_results(self):
+        return
 
 
 if __name__ == '__main__':
@@ -115,25 +187,29 @@ if __name__ == '__main__':
                         help='The folder to store temporary files downloaded from the cloud')
     parser.add_argument("-e", '--errs', type=int,
                         help='View the shared errors. Provide an int to limit to the num of errors shown')
-    parser.add_argument("-b", '--best', help='View the best model')
+    parser.add_argument("-b", '--best', help='View the best model. This assumes epochs is in the progress reports')
+    parser.add_argument("-r", '--results', help='View the results. This assumes epochs is in the progress reports')
+
 
     args = parser.parse_args()
     downloader = Downloader(args.bucket_name, args.tmppth)
 
     if args.errs:
         errors = Errors(downloader)
-        errors.download()
         errors.view_num()
-        errors.view(args.errs)
+        errors.view_errors(args.errs)
 
     if args.best:
         best = Best_Model(downloader)
         best.view_best()
 
+    if args.best:
+        results = Results(downloader)
+        results.view_results()
+
+
 
 # Count number of results
 # Plot all of them by VM (all graphs should have the same x and y min and max)
-
-# View hyperparameters portion for each VM
 
 # separate downloading and analyzing since we can analyze multiple times and download once

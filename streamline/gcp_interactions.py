@@ -80,7 +80,7 @@ def upload_file(bucket_name, src, dest):
     blob.upload_from_filename(src)
 
 
-def download_folder(bucket_name, src, dest):
+def download_folder(bucket_name, src, dest, ignore_filename=None):
     '''
     Moves content of src folder in GCP into local dest folder.
     For safety, dest must be empty.
@@ -101,6 +101,9 @@ def download_folder(bucket_name, src, dest):
     for blob in blobs:
         # name will be in the format of src/folder1/.../folderN/file.ext
         name = blob.name
+
+        if not ignore_filename and os.path.basename(name) == ignore_filename:
+            continue
 
         # Ignoring the path to the folder
         no_path = name[len(src):]

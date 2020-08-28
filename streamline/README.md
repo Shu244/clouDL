@@ -14,3 +14,5 @@ and epochs should start at 0. This is not mandatory but saves unnecessary saving
 The starting epoch is calculated by counting the number of elements added to a key using <code>Manager.add_progress(key, value)</code>.
 In order to keep track of epochs, the method must be used; otherwise, the starting epoch will be 0 by default when reloading from a state (this will not
 throw an error).
+
+The <code>analyze.py</code> file assumes "epochs" is a value being reported in the progress.
