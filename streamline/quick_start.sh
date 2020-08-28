@@ -7,7 +7,7 @@ MODE=$2
 
 if [ "$MODE" == "new" ]; then
 
-  python local_cleanup.py stoked-brand-285120 \
+  python prep_and_start.py stoked-brand-285120 \
     $BUCKET_NAME \
     --tokenpth ./user_files/access_token \
     --mkbucket \
@@ -18,14 +18,14 @@ if [ "$MODE" == "new" ]; then
 
 elif [ "$MODE" = "resume" ]; then
 
-  python local_cleanup.py stoked-brand-285120 \
+  python prep_and_start.py stoked-brand-285120 \
     $BUCKET_NAME \
     --hyparams ./user_files/hyperparameters.json \
     --cluster 2 ./user_files/configs.json ./startup.sh
 
 elif [ "$MODE" = "manual-test" ]; then
 
-  python local_cleanup.py stoked-brand-285120 \
+  python prep_and_start.py stoked-brand-285120 \
     $BUCKET_NAME \
     --tokenpth ./user_files/access_token \
     --mkbucket \

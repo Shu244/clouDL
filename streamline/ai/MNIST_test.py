@@ -92,8 +92,8 @@ def run(manager, param_pth):
     dataset2 = datasets.MNIST('../data', train=False, download=True,
                        transform=transform)
 
-    train_loader = torch.utils.data.DataLoader(dataset1, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-    test_loader = torch.utils.data.DataLoader(dataset2, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    train_loader = torch.utils.data.DataLoader(dataset1, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+    test_loader = torch.utils.data.DataLoader(dataset2, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
 
     model = Net().to(device)
 
@@ -109,6 +109,7 @@ def run(manager, param_pth):
         train(model, device, train_loader, optimizer, epoch, manager)
         test(model, device, test_loader, manager)
         scheduler.step()
+        print("Finished one epoch")
 
         if epoch > 0 and epoch % SAVE_INTERVAL == 0:
             # save progress

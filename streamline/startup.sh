@@ -5,8 +5,8 @@ sudo /opt/deeplearning/install-driver.sh to install drivers
 
 export PATH="/opt/conda/bin:$PATH"
 
- # The y flag installs without prompts
- conda install -y pathlib
+# The y flag installs without prompts
+conda install -y pathlib
 
 RANK=$(curl http://metadata/computeMetadata/v1/instance/attributes/rank -H "Metadata-Flavor: Google")
 BUCKET_NAME=$(curl http://metadata/computeMetadata/v1/instance/attributes/bucket -H "Metadata-Flavor: Google")

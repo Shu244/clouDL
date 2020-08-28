@@ -266,6 +266,7 @@ def hyparam_search(manager):
         try:
             param_pth = os.path.join(temp_path, strings.params_file) if manager.hyparams.load_params else None
             run(manager, param_pth)
+            print("Trying new hyperparameters")
         except Exception as err:
             timestr = time.strftime("%m%d%Y-%H%M%S")
             readable_timestr = time.strftime("%m/%d/%Y-%H:%M:%S")
@@ -278,9 +279,9 @@ def hyparam_search(manager):
                 "time": readable_timestr
             }
             msg = json.dumps(msg)
-            quick_send.send(filename, msg, strings.shared_errors)
             print("Writing the following msg to shared errors folder in Google cloud")
             print(msg)
+            quick_send.send(filename, msg, strings.shared_errors)
 
             manager.reset()
             manager.reset_cloud_progress()

@@ -228,13 +228,6 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
             }
         ],
 
-        "guestAccelerators": [
-            {
-                "acceleratorCount": configs["gpu_count"],
-                "acceleratorType": accelerator_type
-            }
-        ],
-
         "scheduling": {
             "preemptible": configs["preemptible"],
             "onHostMaintenance": "TERMINATE",
@@ -276,6 +269,14 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
             ]
         }
     }
+
+    if configs["gpu_count"] > 0:
+        config["guestAccelerators"] = [
+            {
+                "acceleratorCount": configs["gpu_count"],
+                "acceleratorType": accelerator_type
+            }
+        ],
 
     return compute.instances().insert(
         project=project_id,

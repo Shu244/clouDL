@@ -1,4 +1,3 @@
 # GCP_AI
-Testing workflow when training a model on GCP
-
-CURRENTLY GPUS ARE TURNED OFF DUE TO GPU QUOTAS
+This package allows you to easily train your model on a cluster of GPU equipped VMs in GCP. 
+This package also allows you to visualize the automatically generated reports. 
