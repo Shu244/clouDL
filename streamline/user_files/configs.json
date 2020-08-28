@@ -1,8 +1,8 @@
 {
   "zones": ["us-central1-b", "us-central1-c", "us-central1-f", "us-central1-a"],
   "gpu": "nvidia-tesla-t4",
-  "gpu_count": 0,
-  "family": "pytorch-1-4-cpu",
+  "gpu_count": 1,
+  "family": "pytorch-1-4-cu101",
   "diskSizeGb": "100",
   "preemptible": true,
   "name_prefix": "vm",
@@ -11,6 +11,7 @@
     "cpu counts must be a power of 2",
     "quota limits me to 1 GPU currently",
     "gpu family: pytorch-1-4-cu101",
-    "cpu family: pytorch-1-4-cpu"
+    "cpu family: pytorch-1-4-cpu",
+    "Currently does not work without GPUs. Training freezes at one point, possibly a memory issue."
   ]
 }

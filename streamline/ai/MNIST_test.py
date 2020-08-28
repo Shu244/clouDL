@@ -92,8 +92,8 @@ def run(manager, param_pth):
     dataset2 = datasets.MNIST('../data', train=False, download=True,
                        transform=transform)
 
-    train_loader = torch.utils.data.DataLoader(dataset1, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
-    test_loader = torch.utils.data.DataLoader(dataset2, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+    train_loader = torch.utils.data.DataLoader(dataset1, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+    test_loader = torch.utils.data.DataLoader(dataset2, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
     model = Net().to(device)
 
