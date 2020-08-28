@@ -245,10 +245,14 @@ class Results:
             subplot.set_ylim(yrange)
 
         # Credit to https://stackoverflow.com/a/53172335
+        # Uses a common x and y label for all subplots
         fig.add_subplot(111, frameon=False)
         plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
         plt.xlabel(x_label)
-        plt.ylabel(progress_list[0][0].compare)
+        plt.ylabel(progress_list[0][0].compare, labelpad=25)
+
+        # Labelpad and this are to improve spacing
+        fig.tight_layout()
 
     def view(self, x_label, yrange):
         progress_dictionary = self.get_all_progress()
