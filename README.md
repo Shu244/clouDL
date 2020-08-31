@@ -7,3 +7,4 @@ This package also allows you to visualize the automatically generated reports.
 2) Create separate file for Hyperparameter and Progress classes
 3) Allow more options besides uniform random
 4) Create an archive folder for rerunning hyperparameter tuning
+5) Write a proper readme
