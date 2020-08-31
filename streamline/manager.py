@@ -1,15 +1,16 @@
-import gcp_interactions as gcp
 import traceback
 import argparse
-import strings
-import random
 import torch
 import copy
 import time
 import json
 import os
 
+from utils.Hyperparameters import Hyperparameters
+from utils import gcp_interactions as gcp
+from utils.Progress import Progress
 from ai.MNIST_test import run
+from utils import strings
 
 
 '''
@@ -33,8 +34,16 @@ class Manager:
 
         self.download_progress_folder(bucket_name, temp_path, rank)
 
-        self.tracker = Tracker(self.quick_send, rank)
-        self.hyparams = Hyperparameters(self.quick_send, rank)
+        progress_path = os.path.join(temp_path, strings.vm_progress_report)
+        hyparams_path = os.path.join(temp_path, strings.vm_hyparams_report)
+
+        if os.path.isfile(progress_path):
+            self.progress = Progress(progress_path=progress_path)
+        else:
+            self.progress = Progress()
+        self.hyparams = Hyperparameters(hyparams_path=hyparams_path)
+
+        self.load_params = self.hyparams.force_cur_values()
         self.count = 0
 
     def download_progress_folder(self, bucket_name, tmp_folder, rank):
@@ -42,16 +51,19 @@ class Manager:
         gcp.download_folder(bucket_name, folder_path, tmp_folder)
 
     def start_epoch(self):
-        return self.tracker.start_epoch()
+        return self.progress.start_epoch()
 
     def set_compare_goal(self, compare, goal):
-        self.tracker.set_compare_goal(compare, goal)
+        self.progress.set_compare_goal(compare, goal)
 
     def get_hyparams(self):
         return self.hyparams.get_hyparams()
 
+    def get_progress(self):
+        return self.progress.get_progress()
+
     def add_progress(self, key, value):
-        self.tracker.add(key, value)
+        self.progress.add(key, value)
 
     def finished(self, param_dict):
         self.save_results()
@@ -73,17 +85,17 @@ class Manager:
         self.quick_send.send(strings.vm_hyparams_report, json.dumps(hyparams_copy), cloud_folder_path)
 
     def reset(self):
-        self.tracker.reset()
+        self.progress.reset()
         self.hyparams.reset()
 
     def save_progress(self, param_dict):
         folder_path = strings.vm_progress + ("/%d" % self.rank)
-        self.tracker.save_progress(folder_path)
-        self.hyparams.save_hyparams(folder_path)
+        self.progress.save_progress(self.quick_send, folder_path)
+        self.hyparams.save_hyparams(self.quick_send, folder_path)
         self.save_params(param_dict, folder_path)
 
     def save_results(self):
-        progress_report = self.tracker.get_report()
+        progress_report = self.progress.get_progress()
         hyparams_report = self.hyparams.get_raw_hyparams()
 
         timestr = time.strftime("%m%d%Y-%H%M%S")
@@ -101,40 +113,26 @@ class Manager:
         self.count += 1
 
     def save_best(self, param_dict):
-        if self.isBest(self.tracker.get_report()):
+        if self.isBest(self.progress):
             folder_path = strings.best_model + ("/%d" % self.rank)
-            self.tracker.save_progress(folder_path)
-            self.hyparams.save_hyparams(folder_path)
+            self.progress.save_progress(self.quick_send, folder_path)
+            self.hyparams.save_hyparams(self.quick_send, folder_path)
             self.save_params(param_dict, folder_path)
             return True
         return False
 
     def isBest(self, cur_report):
-        report_path = os.path.join(strings.best_model, str(self.rank), strings.vm_progress_report)
+        progress_path = os.path.join(strings.best_model, str(self.rank), strings.vm_progress_report)
 
         try:
-            gcp.download_file(self.bucket_name, report_path, self.temp_path)
+            gcp.download_file(self.bucket_name, progress_path, self.temp_path)
         except Exception as err:
             return True
 
-        local_report_path = os.path.join(self.temp_path, strings.vm_progress_report)
-        best_report = json.load(open(local_report_path))
+        local_progress_path = os.path.join(self.temp_path, strings.vm_progress_report)
+        best_progress = Progress(progress_path=local_progress_path)
 
-        # metric to compare
-        compare = cur_report["compare"]
-        goal = cur_report["goal"]
-
-        if goal == "max":
-            best_val = max(best_report[compare])
-            cur_val = max(cur_report[compare])
-            if cur_val > best_val:
-                return True
-        else:
-            best_val = min(best_report[compare])
-            cur_val = min(cur_report[compare])
-            if cur_val < best_val:
-                return True
-        return False
+        return best_progress.worse(cur_report.get_best())
 
     def save_params(self, param_dict, cloud_folder):
         '''
@@ -146,125 +144,21 @@ class Manager:
         torch.save(param_dict, local_path)
         gcp.upload_file(self.bucket_name, local_path, cloud_folder)
 
-
-class Tracker:
-    '''
-    Used to track the performance of a model while training:
-    -Loads and saves model progress
-    '''
-
-    def __init__(self, quick_send, rank):
-        self.quick_send = quick_send
-        self.progress_report_local_pth = os.path.join(
-            quick_send.temp_path,
-            strings.vm_progress_report)
-        if os.path.isfile(self.progress_report_local_pth):
-            self.report = json.load(open(self.progress_report_local_pth))
-        else:
-            self.reset()
-        self.rank = rank
-
-    def add(self, key, value):
-        if key not in self.report:
-            self.report[key] = []
-        self.report[key].append(value)
-
-    def save_progress(self, folder):
-        self.quick_send.send(strings.vm_progress_report, json.dumps(self.report), folder)
-
-    def get_report(self):
-        return self.report
-
-    def reset(self):
-        self.report = {
-            "goal": "max",
-            "compare": "val_accuracy"
-        }
-
-    def set_compare_goal(self, compare, goal):
-        self.report["compare"] = compare
-        self.report["goal"] = goal
-
-    def approximate_start_epoch(self):
-        dict_keys = list(self.report.keys())
-        dict_keys.remove("compare")
-        dict_keys.remove("goal")
-        if len(dict_keys) == 0:
-            return 0
-        return len(self.report[dict_keys[0]])
-
-    def start_epoch(self):
-        epochs = "epochs"
-        if epochs in self.report:
-            # +1 since we have already completed the last epoch in the list
-            return self.report[epochs][-1] + 1
-        else:
-            return self.approximate_start_epoch()
-
-
-class Hyperparameters:
-    '''
-    Manages the hyperparameters:
-    -Loads hyperparameters and saves them
-    '''
-
-    def __init__(self, quick_send, rank):
-        file_path = os.path.join(quick_send.temp_path, strings.vm_hyparams_report)
-        self.raw_hyparams = json.load(open(file_path))
-        self.cur_val = "current_values"
-        self.quick_send = quick_send
-        self.rank = rank
-
-        if self.cur_val in self.raw_hyparams and self.raw_hyparams[self.cur_val] != None:
-            self.load_params = True
-        else:
-            # generate new values and sets self.load_params = False
-            self.generate()
-
-    def reset(self):
-        self.generate()
-        self.raw_hyparams["current_iter"] = self.raw_hyparams["current_iter"] + 1
-
-    def generate(self):
-        '''
-        Generates new hyperparameters according to specifications in hyparam_obj
-        '''
-
-        hyparam_copy = copy.deepcopy(self.raw_hyparams["hyperparameters"])
-        for key, value in hyparam_copy.items():
-            if isinstance(value, list):
-                new_val = random.uniform(value[0], value[1])
-                hyparam_copy[key] = new_val
-        self.raw_hyparams[self.cur_val] = hyparam_copy
-        self.load_params = False
-
-    def get_hyparams(self):
-        return self.raw_hyparams[self.cur_val]
-
-    def get_raw_hyparams(self):
-        '''
-        The raw hyperparameter dictionary contains the current hyperparemter values as
-        well as the information specifying the portion of the hyperparameter grid being searched.
-
-        :return: Raw hyperparameter dictionary
-        '''
-
-        return self.raw_hyparams
-
-    def save_hyparams(self, cloud_folder):
-        self.quick_send.send(strings.vm_hyparams_report, json.dumps(self.raw_hyparams), cloud_folder)
+    def get_cur_max_iter(self):
+        cur_iter = self.hyparams.get_raw_hyparams()[self.hyparams.cur_iter]
+        max_iter = self.hyparams.get_raw_hyparams()["max_iter"]
+        return cur_iter, max_iter
 
 
 def hyparam_search(manager):
-    start = manager.hyparams.raw_hyparams["current_iter"]
-    end = manager.hyparams.raw_hyparams["max_iter"]
+    start, end = manager.get_cur_max_iter()
     quick_send = manager.quick_send
     rank = manager.rank
     temp_path = manager.temp_path
 
     while start < end:
         try:
-            param_pth = os.path.join(temp_path, strings.params_file) if manager.hyparams.load_params else None
+            param_pth = os.path.join(temp_path, strings.params_file) if manager.load_params else None
             run(manager, param_pth)
             print("Trying new hyperparameters")
         except Exception as err:
@@ -275,7 +169,7 @@ def hyparam_search(manager):
                 "traceback": traceback.format_exc(),
                 "error": str(err),
                 "hyperparameters": manager.get_hyparams(),
-                "progress": manager.tracker.get_report(),
+                "progress": manager.get_progress(),
                 "time": readable_timestr
             }
             msg = json.dumps(msg)

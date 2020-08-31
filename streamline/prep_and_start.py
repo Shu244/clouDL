@@ -1,10 +1,10 @@
-import gcp_interactions as gcp
 import argparse
-import strings
 import copy
 import time
 import json
 
+from utils import gcp_interactions as gcp
+from utils import strings
 
 def make_bucket(bucket_name, location):
     print(

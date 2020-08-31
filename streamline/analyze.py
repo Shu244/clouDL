@@ -1,10 +1,13 @@
 import matplotlib.pyplot as plt
-import gcp_interactions as gcp
 import argparse
-import strings
 import json
 import os
 import re
+
+from utils.Hyperparameters import Hyperparameters
+from utils.Progress import Progress
+from utils.Downloader import Downloader
+from utils import strings
 
 
 def hr():
@@ -17,86 +20,6 @@ def plot_vals(x, y, title, ylabel, xlabel="Number of Epochs"):
     plt.xlabel(xlabel)
     plt.title(title)
     plt.show()
-
-
-class Downloader:
-    def __init__(self, bucket_name, temp_path):
-        self.bucket_name = bucket_name
-        self.temp_path = temp_path
-
-    def download(self, folder_name, ignore_filename=None):
-        dest = self.cplt_tmppth(folder_name)
-        if not os.path.isdir(dest):
-            os.mkdir(dest)
-            gcp.download_folder(self.bucket_name, folder_name, dest, ignore_filename)
-
-    def cplt_tmppth(self, folder):
-        return os.path.join(self.temp_path, folder)
-
-
-class Hyperparameters:
-    def __init__(self, hyparams_path=None, hyparams=None):
-        if not hyparams_path and not hyparams:
-            raise ValueError
-
-        if hyparams_path:
-            self.hyparams = json.load(open(hyparams_path))
-        if hyparams:
-            self.hyparams = hyparams
-
-        self.meaningful = self.meaningful_sec()
-
-    def meaningful_sec(self):
-        hyparam_sec = self.hyparams["hyperparameters"]
-        meaningful = {}
-        for key, value in hyparam_sec.items():
-            if isinstance(value, list):
-                meaningful[key] = value
-        return meaningful
-
-    def cur_vals(self):
-        return self.hyparams["current_values"]
-
-    def cur_meaningful_vals(self):
-        cur_meaningful = {}
-        cur_vals = self.hyparams["current_values"]
-        for key in self.meaningful:
-            cur_meaningful[key] = cur_vals[key]
-        return cur_meaningful
-
-
-class Progress:
-    def __init__(self, progress_path=None, progress=None):
-        if not progress_path and not progress:
-            raise ValueError
-
-        if progress_path:
-            self.progress = json.load(open(progress_path))
-        if progress:
-            self.progress = progress
-
-        self.compare = self.progress["compare"]
-        self.goal = self.progress["goal"]
-        self.compare_vals = self.progress[self.compare]
-        self.best = max(self.compare_vals) if self.goal == "max" else min(self.compare_vals)
-
-    def get_best(self):
-        return self.best
-
-    def worse(self, val):
-        if self.goal == 'max':
-            if val > self.best:
-                return True
-            else:
-                return False
-        if self.goal == 'min':
-            if val < self.best:
-                return True
-            else:
-                return False
-
-    def get_compare_goal(self):
-        return self.compare, self.goal
 
 
 class Errors:
@@ -148,7 +71,7 @@ class Best_Model:
 
             progress = Progress(progress_path=os.path.join(self.path, folder_name, strings.vm_progress_report))
 
-            if best_progress.worse(progress.best):
+            if best_progress.worse(progress.get_best()):
                 best_progress = progress
                 best_hyparams = Hyperparameters(hyparams_path=os.path.join(self.path, folder_name, strings.vm_progress_report))
 
@@ -162,14 +85,16 @@ class Best_Model:
             return
 
         best_progress, best_hyparams = result
+        compare, _ = best_progress.get_compare_goal()
+        compare_vals = best_progress.get_compare_vals()
+
         hr()
-        print("Best %s is %s" % (best_progress.compare, str(best_progress.best)))
+        print("Best %s is %s" % (compare, str(best_progress.get_best())))
         print("Hyperparameter section:")
-        print(json.dumps(best_hyparams.meaningful))
+        print(json.dumps(best_hyparams.interesting_sec()))
         print("Hyperparameters used:")
-        print(best_hyparams.cur_meaningful_vals())
-        plot_vals(best_progress.progress[x_label], best_progress.compare_vals,
-                  "Best Progress %s vs. %s" % (best_progress.compare, x_label), best_progress.compare, x_label)
+        print(best_hyparams.interesting_vals())
+        plot_vals(best_progress.progress[x_label], compare_vals, "Best Progress %s vs. %s" % (compare, x_label), compare, x_label)
 
 
 class Results:
@@ -230,7 +155,7 @@ class Results:
 
         for index, (progress, filename) in enumerate(progress_list):
             x = progress.progress[x_label]
-            y = progress.compare_vals
+            y = progress.get_compare_vals()
 
             row = index // cols
             col = index - row * cols
@@ -249,7 +174,7 @@ class Results:
         fig.add_subplot(111, frameon=False)
         plt.tick_params(labelcolor='none', top=False, bottom=False, left=False, right=False)
         plt.xlabel(x_label)
-        plt.ylabel(progress_list[0][0].compare, labelpad=25)
+        plt.ylabel(progress_list[0][0].get_compare_goal()[0], labelpad=25)
 
         # Labelpad and this are to improve spacing
         fig.tight_layout()
