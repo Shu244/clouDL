@@ -1,5 +1,5 @@
 {
-  "iterations": 15,
+  "iterations": 6,
   "hyperparameters" : [
     {
       "BATCH_SIZE": 128,
