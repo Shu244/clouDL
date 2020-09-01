@@ -2,7 +2,9 @@ import argparse
 import copy
 import time
 import json
+import os
 
+from utils.Downloader import Downloader
 from utils import gcp_interactions as gcp
 from utils import strings
 

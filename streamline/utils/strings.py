@@ -7,6 +7,7 @@ best_model = "best-model"
 results = "results"
 shared_errors = "shared-errors"
 secrets = "secrets"
+archive = "archive"
 
 # Google cloud storage file names
 vm_hyparams_report = "hyperparameters.json"
