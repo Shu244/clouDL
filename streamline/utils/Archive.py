@@ -36,17 +36,12 @@ class Archive:
         gcp.delete_all_prefixes(self.bucket_name, strings.results)
         gcp.delete_all_prefixes(self.bucket_name, strings.shared_errors)
 
-    def archive_results(self, results_path):
-        folders = os.listdir(results_path)
-        if len(folders) == 0:
-            return
-
-        for folder in folders:
-            folder_path = os.path.join(results_path, folder)
-            files = os.listdir(folder_path)
-            for file in files:
-                gcp_path = os.path.join(strings.archive, strings.results)
-                gcp.upload_file(self.bucket_name, os.path.join(folder_path, file), gcp_path)
+    def archive_results(self):
+        folder_names = gcp.get_folder_names(self.bucket_name, strings.results)
+        for folder_name in folder_names:
+            src = os.path.join(strings.results, folder_name)
+            dest = os.path.join(strings.archive. strings.results)
+            gcp.move_cloud_folder(self.bucket_name, src, dest)
 
     def archive_best_model(self, best_model_path):
         folders = os.listdir(best_model_path)

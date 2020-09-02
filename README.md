@@ -14,3 +14,6 @@ This package also allows you to visualize the automatically generated reports.
 1) download_as_string (downloads content as a string)
 2) upload_from_string 
 3) copy_blob() and delete_blob() https://stackoverflow.com/a/58377073
+
+# Tip
+1) Folders manually created using the GCP console will show up when using bucket.list_blobs. Automatically created folders will not show

@@ -1,7 +1,8 @@
-import glob
 import pathlib
-import os
+import glob
+import json
 import time
+import os
 
 # Compute Engine client library
 import googleapiclient.discovery
@@ -11,6 +12,7 @@ from google.cloud import storage
 storage_client = storage.Client()
 # using compute engine service, version 1
 compute = googleapiclient.discovery.build('compute', 'v1')
+
 
 def upload_folder_helper(bucket, src, dest):
     '''
@@ -88,6 +90,7 @@ def download_folder(bucket_name, src, dest, ignore_filename=None):
     :param bucket: Bucket name
     :param src: Source folder in GCP storage
     :param dest: local destination folder
+    :param ignore_filename: files to not move in the src folder
     '''
 
     # if not os.path.isdir(dest) or len(os.listdir(dest)) != 0:
@@ -133,10 +136,106 @@ def download_file(bucket_name, src, dest):
     :param src: Path of the file
     :param dest: Path of the folder to keep the file.
     '''
-    filename = src[src.rfind('/')+1:]
+    filename = os.path.basename(src)
     bucket = storage_client.bucket(bucket_name)
     blob = bucket.blob(src)
     blob.download_to_filename(os.path.join(dest, filename))
+
+
+def move_cloud_folder(bucket_name, src, dest, ignore_filename=None):
+    '''
+    Moves the contents of the src cloud folder to the dest Cloud folder by
+    renaming each blob in the src folder.
+
+    :param bucket_name: Bucket name
+    :param src: Source folder
+    :param dest: Destination folder
+    :param ignore_filename: files to not move in the src folder
+    '''
+
+    if src[-1] != '/':
+        src = src + '/'
+
+    bucket = storage_client.bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix=src)  # Get list of files
+    for blob in blobs:
+        # name will be in the format of src/folder1/.../folderN/file.ext
+        name = blob.name
+
+        if ignore_filename and os.path.basename(name) == ignore_filename:
+            continue
+
+        # Ignoring the path to the src folder
+        no_src = name[len(src):]
+        if not no_src:
+            continue
+
+        new_name = os.path.join(dest, no_src)
+        bucket.rename_blob(blob, new_name)
+
+
+def get_folder_names(bucket_name, src):
+    '''
+    Gets all the folder names in the first level of the src folder
+    :param bucket_name: Bucket name
+    :param src: Source folder
+    '''
+
+    if src[-1] != '/':
+        src = src + '/'
+
+    bucket = storage_client.bucket(bucket_name)
+    blobs = bucket.list_blobs(prefix=src)  # Get list of files
+    folder_names = set({})
+    for blob in blobs:
+        name = blob.name
+        no_src = name[len(src):]
+        folder_delimiter_index = no_src.find('/')
+        if folder_delimiter_index == -1:
+            continue
+        folder_name = no_src[:folder_delimiter_index]
+        if folder_name:
+            folder_names.add(folder_name)
+    return folder_names
+
+
+def stream_download_str(bucket_name, src):
+    '''
+    Download a blob from GCP as a string object
+
+    :param bucket_name: Bucket name
+    :param src: Source to download from
+    '''
+
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(src)
+    return blob.download_as_string()
+
+
+def stream_download_json(bucket_name, src):
+    '''
+    Download a blob from GCP as a json/dict object
+
+    :param bucket_name: Bucket name
+    :param src: Source to download from
+    '''
+
+    str = stream_download_str(bucket_name, src)
+    return json.loads(str)
+
+
+def stream_upload_str(bucket_name, src, dest):
+    '''
+    Upload a string object to GCP
+
+    :param bucket_name: Bucket name
+    :param src: Source string
+    :param dest: Destination to save file (ex: vm-progress/filename.json)
+    '''
+
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(dest)
+    blob.upload_from_string(src)
 
 
 def delete_all_prefixes(bucket_name, prefix):
