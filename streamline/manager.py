@@ -42,6 +42,10 @@ class Manager:
         self.load_best_params = False
         self.count = 0
 
+        # For tracking the model
+        self.model = None
+        self.best_params = None
+
         if self.load_params:
             params_path = os.path.join(strings.vm_progress, str(rank), strings.params_file)
             gcp.download_file(self.bucket_name, params_path, self.temp_path)
@@ -52,6 +56,22 @@ class Manager:
                 self.load_best_params = True
             except Exception as err:
                 print('No best params in cloud')
+
+    def track_model(self, model):
+        '''
+        Auto load progress into model, track best params, and save checkpoints
+
+        :param model: Model to track
+        '''
+
+        self.model = model
+
+        if self.load_params:
+            path = os.path.join(self.temp_path, strings.params_file)
+            self.model.load_state_dict(torch.load(path))
+        if self.load_best_params:
+            path = os.path.join(self.temp_path, strings.best_params_file)
+            self.best_params = torch.load(path)
 
     def start_epoch(self):
         return self.progress.start_epoch()
@@ -66,12 +86,19 @@ class Manager:
         return self.progress.get_progress()
 
     def add_progress(self, key, value):
-        self.progress.add(key, value)
+        improved = self.progress.add(key, value)
+        if improved and self.model is not None:
+            self.best_params = self.model.state_dict()
 
-    def finished(self, param_dict):
+    def finished(self, param_dict=None):
         '''
         :param param_dict: This can be the current params or the best params for the model.
         '''
+        if param_dict is None and self.best_params is not None:
+            param_dict = self.best_params
+
+        if param_dict is None:
+            raise ValueError
 
         self.save_results()
         self.save_best(param_dict)
@@ -95,7 +122,15 @@ class Manager:
         self.progress.reset()
         self.hyparams.reset()
 
-    def save_progress(self, param_dict, best_param_dict=None):
+    def save_progress(self, param_dict=None, best_param_dict=None):
+        if param_dict is None and self.model is not None:
+            param_dict = self.model.state_dict()
+        if best_param_dict is None and self.best_params is not None:
+            best_param_dict = self.best_params
+
+        if param_dict is None:
+            raise ValueError
+
         folder_path = strings.vm_progress + ("/%d" % self.rank)
         self.progress.save_progress(self.quick_send, folder_path)
         self.hyparams.save_hyparams(self.quick_send, folder_path)

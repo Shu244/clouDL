@@ -24,17 +24,41 @@ class Progress:
 
     def get_compare_vals(self):
         compare, _ = self.get_compare_goal()
-        return self.progress[compare]
+        return self.progress[compare] if compare in self.progress else None
 
     def get_best(self):
         _, goal = self.get_compare_goal()
         compare_vals = self.get_compare_vals()
+
+        if compare_vals is None:
+            return None
+
         return max(compare_vals) if goal == "max" else min(compare_vals)
 
     def add(self, key, value):
+        '''
+        Adds the key and value to the progress
+
+        :param key: Key
+        :param value: Value
+        :return: True if the key and value are the new best. False otherwise
+        '''
+
         if key not in self.progress:
             self.progress[key] = []
         self.progress[key].append(value)
+
+        compare, _ = self.get_compare_goal()
+        if compare == key:
+            compare_vals = self.get_compare_vals()
+            best = self.get_best()
+            index = compare_vals.index(best)
+            if index == len(compare_vals) - 1:
+                # The new key and value is the current best
+                return True
+
+        return False
+
 
     def save_progress(self, quick_send, folder):
         quick_send.send(strings.vm_progress_report, json.dumps(self.progress), folder)
