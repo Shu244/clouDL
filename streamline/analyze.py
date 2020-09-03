@@ -103,7 +103,12 @@ class Best_Model:
             if index == 0:
                 continue
 
-            progress = Progress(progress_path=os.path.join(path, folder_name, strings.vm_progress_report))
+            progress_path = os.path.join(path, folder_name, strings.vm_progress_report)
+
+            if not os.path.isfile(progress_path):
+                continue
+
+            progress = Progress(progress_path=progress_path)
 
             if best_progress.worse(progress.get_best()):
                 best_progress = progress
@@ -124,7 +129,6 @@ class Best_Model:
         compare, _ = best_progress.get_compare_goal()
         compare_vals = best_progress.get_compare_vals()
 
-        hr()
         print("Folder %s" % best_folder)
         print("Best %s is %s" % (compare, str(best_progress.get_best())))
         print("Hyperparameter section:")
@@ -134,7 +138,8 @@ class Best_Model:
         plot_vals(best_progress.progress[x_label], compare_vals, "Best Progress %s vs. %s" % (compare, x_label), compare, x_label)
 
     def view(self, x_label):
-        print('Best model from VM data')
+        hr()
+        print('Best model from VM data:')
         Best_Model.static_view(self.path, x_label)
 
 
@@ -152,7 +157,9 @@ class Results:
             clpt_pth = os.path.join(folder_pth, filename)
             result_json = json.load(open(clpt_pth))
             progress_json = result_json["progress"]
-            progress_list.append((Progress(progress=progress_json), filename))
+            iter_id = re.search("(vm[0-9]+)-([0-9]+)", filename).group(2)
+            id_str = "id: %s" % iter_id
+            progress_list.append((Progress(progress=progress_json), id_str))
         return progress_list
 
     def get_all_progress(self):
@@ -164,11 +171,11 @@ class Results:
         '''
         Shape of all_progress:
         [
-            [(Progress, filename), ..., (Progress, filename)],
+            [(Progress, id_str), ..., (Progress, id_str)],
             .
             .
             .
-            [(Progress, filename), ..., (Progress, filename)]
+            [(Progress, id_str), ..., (Progress, id_str)]
         ]
         '''
         all_progress = [self.get_vm_progress(folder_name) for folder_name in folder_names]
@@ -183,32 +190,38 @@ class Results:
         :param main_title: Title of the entire subplot
         :param x_label: x label for each subplot
         :param progress_tuple: A list of tuples (one tuple for each result from a VM) that contains
-                               a Progress object and the associated filename
+                               a Progress object and the subplot title
         '''
 
 
         num = len(progress_list)
         cols = 3
+
+        if num < cols:
+            cols = num
+
         # ceiling division
         rows = (num + cols - 1 ) // cols
 
         fig, axs = plt.subplots(nrows=rows, ncols=cols, sharex=True, sharey=True)
         fig.suptitle(main_title)
 
-        for index, (progress, filename) in enumerate(progress_list):
+        for index, (progress, subplot_title) in enumerate(progress_list):
             x = progress.progress[x_label]
             y = progress.get_compare_vals()
 
             row = index // cols
             col = index - row * cols
 
-            if rows == 1:
+            if rows == 1 and cols == 1:
+                subplot = axs
+            elif rows == 1:
                 subplot = axs[col]
             else:
                 subplot = axs[row, col]
+
             subplot.plot(x, y)
-            id = re.search("(vm[0-9]+)-([0-9]+)", filename).group(2)
-            subplot.set_title('id: %s' % id)
+            subplot.set_title(subplot_title)
             subplot.set_ylim(yrange)
 
         # Credit to https://stackoverflow.com/a/53172335
@@ -225,6 +238,7 @@ class Results:
         progress_dictionary = self.get_all_progress()
 
         if not progress_dictionary:
+            hr()
             print("No results available")
             return
 
@@ -235,7 +249,9 @@ class Results:
 
 
 class Best_Archived_Models:
+
     def __init__(self, downloader):
+        self.bucket_name = downloader.bucket_name
         self.downloader = downloader
         self.archive_path = downloader.cplt_tmppth(strings.archive)
         self.path = os.path.join(self.archive_path, strings.best_model)
@@ -244,12 +260,62 @@ class Best_Archived_Models:
             os.mkdir(self.archive_path)
             self.downloader.download(os.path.join(strings.archive, strings.best_model), strings.params_file)
 
-    def view(self, x_label):
-        print('Best model from archive')
+    def get_meta(self):
+        meta_path = os.path.join(strings.archive, strings.best_model, strings.meta)
+        meta_json = gcp.stream_download_json(self.bucket_name, meta_path)
+        progress = Progress(progress=meta_json)
+        return progress
+
+    def best_progress_list(self):
+        folders_and_files = os.listdir(self.path)
+
+        if len(folders_and_files) == 0:
+            print("No archive for best models")
+            return None
+
+        progress_list = []
+        for folder_or_file in folders_and_files:
+            path = os.path.join(self.path, folder_or_file)
+            if os.path.isdir(path):
+                # The folder_or_file represents a folder
+                # The folder name represents the rank of the model
+                subplot_title = 'rank: %s' % folder_or_file
+
+                progress_path = os.path.join(path, strings.vm_progress_report)
+                progress = Progress(progress_path=progress_path)
+
+                progress_list.append((progress, subplot_title))
+        return progress_list
+
+    def view(self, x_label, yrange):
+        hr()
+        print('Best model from archive:')
         Best_Model.static_view(self.path, x_label)
-        Results.subplot()
+
+        progress_list = self.best_progress_list()
+
+        if progress_list:
+            # Plotting meta data
+            try:
+                meta = self.get_meta()
+                compare, _ = meta.get_compare_goal()
+                rank_1 = meta.get_progress()['1']
+                x = list(range(0, len(rank_1)))
+                plot_vals(x, rank_1, "Best Model vs. Hyperparameter Tuning Iterations",
+                     compare, "Iterations of Hyperparameter Tuning")
+            except Exception as err:
+                print('No meta data available')
+
+            # Plotting subplots
+            main_title = "Best models from archive"
+            Results.subplot(main_title, x_label, yrange, progress_list)
+            plt.show()
+        else:
+            print('No archived best model')
+
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser(description="Analyzing the data after training")
 
     parser.add_argument('bucket_name', help='The name of the bucket')
@@ -281,13 +347,14 @@ if __name__ == '__main__':
         x_label = args.archive[0]
         top_n = int(args.archive[1])
 
+        hr()
+        print('Archiving')
         archive = Archive(args.bucket_name, top_n)
         archive.archive()
 
         best_archive = Best_Archived_Models(downloader)
-        best_archive.view(x_label)
+        best_archive.view(x_label, args.yrange)
 
     if args.results:
-        yrange = args.yrange
         results = Results(downloader)
-        results.view(args.results, yrange)
+        results.view(args.results, args.yrange)

@@ -22,7 +22,7 @@ class Archive:
         folder_names = gcp.get_folder_names(self.bucket_name, strings.results)
         for folder_name in folder_names:
             src = os.path.join(strings.results, folder_name)
-            dest = os.path.join(strings.archive. strings.results)
+            dest = os.path.join(strings.archive, strings.results)
             gcp.move_cloud_folder(self.bucket_name, src, dest)
 
     def archive_best_model(self, top_n):
@@ -81,9 +81,10 @@ class Archive:
             # Did not beat any in the archive and there is room to insert in the end
             dest = os.path.join(best_archive_path, str(archive_len + 1))
             gcp.move_cloud_folder(self.bucket_name, best_vm_src, dest)
+            inserted = True
 
-        # Best model from VMs has been put into archive
-        return True
+        # True if the progress has been inserted in the best archive. False otherwise
+        return inserted
 
     def update_meta_data(self):
         best_archive_path = os.path.join(strings.archive, strings.best_model)
@@ -112,6 +113,7 @@ class Archive:
 
     def archive(self):
         self.archive_results()
-        self.archive_best_model(self.top_n)
-        self.update_meta_data()
+        result = self.archive_best_model(self.top_n)
+        if result is not None:
+            self.update_meta_data()
         self.clear_for_new_hyparams()
