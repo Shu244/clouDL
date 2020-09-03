@@ -322,7 +322,7 @@ class Best_Archived_Models:
                 print('No meta data available')
 
             # Plotting subplots
-            main_title = "Best models from archive"
+            main_title = "Best Models From Archive"
             Results.subplot(main_title, x_label, yrange, progress_list)
             plt.show()
         else:
