@@ -14,8 +14,9 @@ class Downloader:
         if not os.path.isdir(dest):
             pathlib.Path(dest).mkdir(parents=True, exist_ok=True)
             gcp.download_folder(self.bucket_name, folder_name, dest, ignore_filename)
+            return None
         else:
-            print('The folder %s already exists and will be used' % dest)
+            return 'The folder %s already exists and will be used' % dest
 
     def cplt_tmppth(self, folder):
         return os.path.join(self.temp_path, folder)

@@ -43,7 +43,7 @@ class Errors:
     def __init__(self, downloader):
         self.downloader = downloader
         self.path = downloader.cplt_tmppth(strings.shared_errors)
-        self.downloader.download(strings.shared_errors)
+        self.msg = self.downloader.download(strings.shared_errors)
 
     def get_count(self):
         return len(os.listdir(self.path))
@@ -52,6 +52,10 @@ class Errors:
         count = self.get_count()
 
         hr()
+
+        if self.msg:
+            print(self.msg)
+
         print('Number of errors: %d' % count)
 
         if not limit or limit > count:
@@ -71,7 +75,7 @@ class Best_Model:
         self.downloader = downloader
         self.path = downloader.cplt_tmppth(strings.best_model)
         # Ignores param.pt file when downloading folder
-        self.downloader.download(strings.best_model, strings.params_file)
+        self.download_msg = self.downloader.download(strings.best_model, strings.params_file)
 
     @staticmethod
     def best_progress_index(progress_list):
@@ -156,6 +160,10 @@ class Best_Model:
 
     def view(self, x_label):
         hr()
+
+        if self.download_msg:
+            print(self.download_msg)
+
         print('Best model from VM data:')
         Best_Model.static_view(self.path, x_label, "Current Iteration Best Progress")
 
@@ -164,7 +172,7 @@ class Results:
     def __init__(self, downloader):
         self.downloader = downloader
         self.path = downloader.cplt_tmppth(strings.results)
-        self.downloader.download(strings.results)
+        self.download_msg = self.downloader.download(strings.results)
 
     def get_vm_progress(self, folder_name):
         folder_pth = os.path.join(self.path, folder_name)
@@ -255,8 +263,14 @@ class Results:
     def view(self, x_label, yrange):
         progress_dictionary = self.get_all_progress()
 
+        hr()
+
+        if self.download_msg:
+            print(self.download_msg)
+
+        print('Plotting results')
+
         if not progress_dictionary:
-            hr()
             print("No results available")
             return
 
@@ -273,7 +287,7 @@ class Best_Archived_Models:
         self.downloader = downloader
         self.archive_path = os.path.join(strings.archive, strings.best_model)
         self.path = downloader.cplt_tmppth(self.archive_path)
-        self.downloader.download(self.archive_path, strings.params_file)
+        self.download_msg = self.downloader.download(self.archive_path, strings.params_file)
 
     def get_meta(self):
         meta_path = os.path.join(strings.archive, strings.best_model, strings.meta)
@@ -304,6 +318,10 @@ class Best_Archived_Models:
 
     def view(self, x_label, yrange):
         hr()
+
+        if self.download_msg:
+            print(self.download_msg)
+
         print('Best model from archive:')
         Best_Model.static_view(self.path, x_label, "Best Archived/Overall Progress")
 
