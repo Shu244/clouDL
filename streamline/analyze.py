@@ -378,17 +378,21 @@ if __name__ == '__main__':
         best.view(args.best)
 
     if args.archive:
-        # Importing here to avoid cyclic imports
-        from utils.Archive import Archive
-
-        x_label = args.archive[0]
-        top_n = int(args.archive[1])
-
         hr()
-        print('Archiving')
-        archive = Archive(args.bucket_name, top_n)
-        archive.archive()
+        archive_approval = input(
+            "Archiving will move all the VM data and make them inaccessible by some features. Continue? [yes | no]")
+        if archive_approval.lower() in ["yes", "y"]:
+            # Importing here to avoid cyclic imports
+            from utils.Archive import Archive
 
-        best_archive = Best_Archived_Models(downloader)
-        best_archive.view(x_label, args.yrange)
+            x_label = args.archive[0]
+            top_n = int(args.archive[1])
 
+            print('Archiving')
+            archive = Archive(args.bucket_name, top_n)
+            archive.archive()
+
+            best_archive = Best_Archived_Models(downloader)
+            best_archive.view(x_label, args.yrange)
+        else:
+            print("Cannot analyze archive until VM data is archived")

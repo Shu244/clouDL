@@ -1,13 +1,13 @@
 {
-  "iterations": 6,
+  "iterations": 5,
   "hyperparameters" : [
     {
       "BATCH_SIZE": 128,
       "EPOCHS": 5,
       "GAMMA": 0.7,
       "LR": {
-        "data": [0, 0.5],
-        "method": "uniform random"
+        "data": [0.0001, 10],
+        "method": "multiple"
       },
       "SAVE_INTERVAL": 2
     },

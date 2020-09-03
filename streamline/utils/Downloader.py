@@ -16,7 +16,7 @@ class Downloader:
             gcp.download_folder(self.bucket_name, folder_name, dest, ignore_filename)
             return None
         else:
-            return 'The folder %s already exists and will be used' % dest
+            return 'The folder %s already exists and will be used (DATA MAY BE OUTDATED!)' % dest
 
     def cplt_tmppth(self, folder):
         return os.path.join(self.temp_path, folder)

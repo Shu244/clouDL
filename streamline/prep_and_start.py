@@ -206,12 +206,12 @@ if __name__ == '__main__':
     if args.cluster:
         push_latest_code = input(
             "VMs will pull from your github, is the desired version the latest commit on master? [yes | no]")
-        if push_latest_code.lower() not in ["yes", "y"]:
+        if push_latest_code.lower() in ["yes", "y"]:
+            num_worker = int(args.cluster[0])
+            machine_configs_pth = args.cluster[1]
+            startup_script_pth = args.cluster[2]
+            build_cluster(pid, bname, num_worker, machine_configs_pth, startup_script_pth, quick_send)
+            hr()
+        else:
             print("Please push your desired code before continuing")
-            exit(0)
-
-        num_worker = int(args.cluster[0])
-        machine_configs_pth = args.cluster[1]
-        startup_script_pth = args.cluster[2]
-        build_cluster(pid, bname, num_worker, machine_configs_pth, startup_script_pth, quick_send)
-        hr()
+            hr()
