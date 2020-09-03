@@ -113,7 +113,7 @@ def run(manager, param_pth, best_param_pth):
 
         if epoch > 0 and epoch % SAVE_INTERVAL == 0:
             # save progress
-            manager.save_progress(model.state_dict(), model.state_dict())
+            manager.save_progress(model.state_dict())
 
     manager.finished(model.state_dict())
 
