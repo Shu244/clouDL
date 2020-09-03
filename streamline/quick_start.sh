@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Input arguments are bucket_name and mode
+# Input arguments are mode and bucket_name
 
-BUCKET_NAME=$1
-MODE=$2
+MODE=$1
+BUCKET_NAME=$2
 WORKERS=1
 ARCHIVE=3
 
