@@ -2,10 +2,9 @@ import argparse
 import copy
 import time
 import json
-import os
 
-from utils.Downloader import Downloader
 from utils import gcp_interactions as gcp
+from utils.Archive import Archive
 from utils import strings
 
 def make_bucket(bucket_name, location):
@@ -66,16 +65,15 @@ def fill(big, small):
     return big_copy
 
 
-def hyperparamters(bucket_name, hyparams_path, quick_send):
+def hyperparamters(bucket_name, hyparams_path, archive, quick_send):
     print(
         '''
-        Removing error folder and recreating progress folder to hold new hyperparameters. 
+        Archiving data (if there are any) to prepare for new hyperparameters. 
         -bucket name: {0}
         -hyparams_pth: {1}
         '''.format(bucket_name, hyparams_path))
 
-    gcp.delete_all_prefixes(bucket_name, strings.vm_progress)
-    gcp.delete_all_prefixes(bucket_name, strings.shared_errors)
+    archive.archive()
 
     hyparam_configs = json.load(open(hyparams_path))
     iters = hyparam_configs["iterations"]
@@ -179,6 +177,7 @@ if __name__ == '__main__':
     parser.add_argument("-b", "--mkbucket", action="store_true", help="Create the bucket")
     parser.add_argument("-d", "--datapth", help="The path of the data to move into the bucket")
     parser.add_argument("-p", "--hyparams", help="The path for the hyperparameter json")
+    parser.add_argument("-a", "--archive", type=int, default=3, help="The number of best models to archive")
     parser.add_argument("-l", "--location", default="us-central1", help="The location for your bucket")
     parser.add_argument("-m", '--tmppth', default="./tmp", help='The folder to store temporary files before moving to gcloud')
 
@@ -187,6 +186,7 @@ if __name__ == '__main__':
     pid = args.project_id
     bname = gen_bucket_name(pid, args.bucket_name)
     quick_send = gcp.QuickSend(args.tmppth, bname)
+    archive = Archive(bname, args.archive)
 
     if args.mkbucket:
         make_bucket(bname, args.location)
@@ -201,7 +201,7 @@ if __name__ == '__main__':
         hr()
 
     if args.hyparams:
-        hyperparamters(bname, args.hyparams, quick_send)
+        hyperparamters(bname, args.hyparams, archive, quick_send)
         hr()
 
     if args.cluster:

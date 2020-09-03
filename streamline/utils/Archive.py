@@ -1,34 +1,16 @@
+import json
 import os
 
 from . import gcp_interactions as gcp
+from .Progress import Progress
+from analyze import Best_Model
 from . import strings
 
 
-'''
-Need to clear: VM-progress, best_model, results, and shared errors
-
-Need to archive: top N models (keep track of best score in meta data), results 
-
-archive:
--best_models
---meta
---1
----params.pt
----progress.json
----hyperparameters.json
---2
---3
--results
---many results
-
-should also be able to plot best_models meta data
-'''
-
 class Archive:
-    def __init__(self, downloader):
-        self.downloader = downloader
-        self.bucket_name = downloader.bucket_name
-        self.temp_path = downloader.temp_path
+    def __init__(self, bucket_name, top_n):
+        self.bucket_name = bucket_name
+        self.top_n = top_n
 
     def clear_for_new_hyparams(self):
         gcp.delete_all_prefixes(self.bucket_name, strings.vm_progress)
@@ -43,37 +25,93 @@ class Archive:
             dest = os.path.join(strings.archive. strings.results)
             gcp.move_cloud_folder(self.bucket_name, src, dest)
 
-    def archive_best_model(self, best_model_path):
-        folders = os.listdir(best_model_path)
-        if len(folders) == 0:
-            return
+    def archive_best_model(self, top_n):
+        if top_n == 0:
+            return None
 
-        # Get top Models from archive
-        # Get best model from best_models
-        # Check where best_model fits
-        # Break or upload best_model
-        # Update meta_data (should only contain the absolute best model)
+        # There is a best progress for each VM, this gets them all in a list
+        best_progress_list = Best_Model.best_progress_list(self.bucket_name)
 
-        return
+        if not best_progress_list:
+            return None
+
+        progress_list, folder_names = best_progress_list
+
+        best_index = Best_Model.best_progress_index(progress_list)
+        best_progress = progress_list[best_index]
+        best_folder_name = folder_names[best_index]
+        best_vm_src = os.path.join(strings.best_model, best_folder_name)
+
+        best_archive_path = os.path.join(strings.archive, strings.best_model)
+        best_archived_folders = gcp.get_folder_names(self.bucket_name, best_archive_path)
+        archive_len = len(best_archived_folders)
+
+        # There are folders
+        int_folder_names = [int(folder_name) for folder_name in best_archived_folders]
+        # Has at most top_n elements
+        int_folder_names = int_folder_names[:top_n]
+        int_folder_names.sort()
+        best_archived_folders = [str(int_folder_name) for int_folder_name in int_folder_names]
+        inserted = False
+
+        for idx, best_archived_folder in enumerate(best_archived_folders):
+            # Iterates from best to worse
+            archive_progress_pth = os.path.join(strings.archive, strings.best_model,
+                                                best_archived_folder, strings.vm_progress_report)
+            progress_json = gcp.stream_download_json(self.bucket_name, archive_progress_pth)
+            archive_progress = Progress(progress=progress_json)
+            if archive_progress.worse(best_progress.get_best()):
+                # Need to insert new best into the archive
+
+                # Iterates from second to last best archive to best archive that was just beat
+                end = idx
+                start = top_n - 1 if archive_len >= top_n else archive_len
+                for i in range(start, end, -1):
+                    src = os.path.join(best_archive_path, str(i))
+                    dest = os.path.join(strings.archive, strings.best_model, str(i+1))
+                    gcp.move_cloud_folder(self.bucket_name, src, dest)
+
+                # Inserting new best into archive
+                dest = os.path.join(best_archive_path, str(idx + 1))
+                gcp.move_cloud_folder(self.bucket_name, best_vm_src, dest)
+                inserted = True
+                break
+
+        if not inserted and archive_len != top_n:
+            # Did not beat any in the archive and there is room to insert in the end
+            dest = os.path.join(best_archive_path, str(archive_len + 1))
+            gcp.move_cloud_folder(self.bucket_name, best_vm_src, dest)
+
+        # Best model from VMs has been put into archive
+        return True
+
+    def update_meta_data(self):
+        best_archive_path = os.path.join(strings.archive, strings.best_model)
+        meta_path = os.path.join(best_archive_path, strings.meta)
+        new_meta = False
+
+        try:
+            meta_json = gcp.stream_download_json(self.bucket_name, meta_path)
+            meta_progress = Progress(progress=meta_json)
+        except Exception as err:
+            meta_progress = Progress()
+            new_meta = True
+
+        best_archived_folders = gcp.get_folder_names(self.bucket_name, best_archive_path)
+        for idx, folder in enumerate(best_archived_folders):
+            path = os.path.join(best_archive_path, folder, strings.vm_progress_report)
+            best_progress_json = gcp.stream_download_json(self.bucket_name, path)
+            best_progress = Progress(progress=best_progress_json)
+
+            if idx == 0 and new_meta:
+                meta_progress.set_compare_goal(*best_progress.get_compare_goal())
+
+            meta_progress.add(folder, best_progress.get_best())
+
+        gcp.stream_upload_str(self.bucket_name, json.dumps(meta_progress.get_progress()), meta_path)
 
     def archive(self):
-        temp_path = self.downloader.temp_path
-        bucket_name = self.downloader.bucket_name
-
-        archive_path = os.path.join(temp_path, strings.archive)
-        best_model_path = os.path.join(temp_path, strings.best_model)
-        results_path = os.path.join(temp_path, strings.results)
-        if os.path.isdir(archive_path):
-            raise ValueError("Please manually clear archive folder at %s" % archive_path)
-        if os.path.isdir(best_model_path):
-            raise ValueError("Please manually clear best model folder at %s" % best_model_path)
-        if os.path.isdir(results_path):
-            raise ValueError("Please manually clear results folder at %s" % results_path)
-
-        self.downloader.download(strings.archive, ignore_filename=strings.params_file)
-        self.downloader.download(strings.best_model, ignore_filename=strings.params_file)
-        self.downloader.download(strings.results)
-
-        self.archive_results(results_path)
-        self.archive_best_model(best_model_path)
+        self.archive_results()
+        self.archive_best_model(self.top_n)
+        self.update_meta_data()
         self.clear_for_new_hyparams()

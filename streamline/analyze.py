@@ -5,8 +5,9 @@ import os
 import re
 
 from utils.Hyperparameters import Hyperparameters
-from utils.Progress import Progress
+from utils import gcp_interactions as gcp
 from utils.Downloader import Downloader
+from utils.Progress import Progress
 from utils import strings
 
 
@@ -56,45 +57,85 @@ class Best_Model:
         # Ignores param.pt file when downloading folder
         self.downloader.download(strings.best_model, strings.params_file)
 
-    def get_best(self):
-        folder_names = os.listdir(self.path)
+    @staticmethod
+    def best_progress_index(progress_list):
+        '''
+        Returns the index of the best progress. Only the first occurrence is returned.
+
+        :param progress_list: Progress object list
+        :return: Index of best progress
+        '''
+
+        if not progress_list:
+            return None
+        bests = [progress.get_best() for progress in progress_list]
+        return bests.index(max(bests))
+
+    @staticmethod
+    def best_progress_list(bucket_name):
+        folder_names = gcp.get_folder_names(bucket_name, strings.best_model)
+        folder_names = list(folder_names)
+
+        if not folder_names:
+            return None
+
+        progress_list = []
+        for folder_name in folder_names:
+            progress_path = os.path.join(strings.best_model, folder_name, strings.vm_progress_report)
+            progress_json = gcp.stream_download_json(bucket_name, progress_path)
+            progress = Progress(progress=progress_json)
+            progress_list.append(progress)
+
+        return progress_list, folder_names
+
+    @staticmethod
+    def get_best(path):
+        folder_names = os.listdir(path)
 
         if len(folder_names) == 0:
             return None
 
-        best_progress = Progress(progress_path=os.path.join(self.path, folder_names[0], strings.vm_progress_report))
-        best_hyparams = Hyperparameters(hyparams_path=os.path.join(self.path, folder_names[0], strings.vm_hyparams_report))
+        best_progress = Progress(progress_path=os.path.join(path, folder_names[0], strings.vm_progress_report))
+        best_hyparams = Hyperparameters(hyparams_path=os.path.join(path, folder_names[0], strings.vm_hyparams_report))
+        best_folder = folder_names[0]
 
         for index, folder_name in enumerate(folder_names):
             if index == 0:
                 continue
 
-            progress = Progress(progress_path=os.path.join(self.path, folder_name, strings.vm_progress_report))
+            progress = Progress(progress_path=os.path.join(path, folder_name, strings.vm_progress_report))
 
             if best_progress.worse(progress.get_best()):
                 best_progress = progress
-                best_hyparams = Hyperparameters(hyparams_path=os.path.join(self.path, folder_name, strings.vm_progress_report))
+                best_hyparams = Hyperparameters(hyparams_path=os.path.join(path, folder_name, strings.vm_progress_report))
+                best_folder = folder_name
 
-        return best_progress, best_hyparams
+        return best_progress, best_hyparams, best_folder
 
-    def view(self, x_label):
-        result = self.get_best()
+    @staticmethod
+    def static_view(path, x_label):
+        result = Best_Model.get_best(path)
 
         if not result:
             print("No best model")
             return
 
-        best_progress, best_hyparams = result
+        best_progress, best_hyparams, best_folder = result
         compare, _ = best_progress.get_compare_goal()
         compare_vals = best_progress.get_compare_vals()
 
         hr()
+        print("Folder %s" % best_folder)
         print("Best %s is %s" % (compare, str(best_progress.get_best())))
         print("Hyperparameter section:")
         print(json.dumps(best_hyparams.interesting_sec()))
         print("Hyperparameters used:")
         print(best_hyparams.interesting_vals())
         plot_vals(best_progress.progress[x_label], compare_vals, "Best Progress %s vs. %s" % (compare, x_label), compare, x_label)
+
+    def view(self, x_label):
+        print('Best model from VM data')
+        Best_Model.static_view(self.path, x_label)
 
 
 class Results:
@@ -134,13 +175,14 @@ class Results:
         dictionary = dict(zip(folder_names, all_progress))
         return dictionary
 
-    def subplot(self, main_title, x_label, yrange, progress_list):
+    @staticmethod
+    def subplot(main_title, x_label, yrange, progress_list):
         '''
         Creates subplots for the results from one VM
 
         :param main_title: Title of the entire subplot
         :param x_label: x label for each subplot
-        :param progress_tuple: A list of tuples (one for each result from a VM) that contains
+        :param progress_tuple: A list of tuples (one tuple for each result from a VM) that contains
                                a Progress object and the associated filename
         '''
 
@@ -188,9 +230,24 @@ class Results:
 
         for folder_name, progress_list in progress_dictionary.items():
             main_title = 'For VM %s' % folder_name
-            self.subplot(main_title, x_label, yrange, progress_list)
+            Results.subplot(main_title, x_label, yrange, progress_list)
         plt.show()
 
+
+class Best_Archived_Models:
+    def __init__(self, downloader):
+        self.downloader = downloader
+        self.archive_path = downloader.cplt_tmppth(strings.archive)
+        self.path = os.path.join(self.archive_path, strings.best_model)
+
+        if not os.path.isdir(self.archive_path):
+            os.mkdir(self.archive_path)
+            self.downloader.download(os.path.join(strings.archive, strings.best_model), strings.params_file)
+
+    def view(self, x_label):
+        print('Best model from archive')
+        Best_Model.static_view(self.path, x_label)
+        Results.subplot()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Analyzing the data after training")
@@ -200,9 +257,10 @@ if __name__ == '__main__':
                         help='The folder to store temporary files downloaded from the cloud')
     parser.add_argument("-e", '--errs', type=int,
                         help='View the shared errors. Provide an int to limit to the num of errors shown')
-    parser.add_argument("-b", '--best', help='View the best model. You can provide the x value to plot by')
-    parser.add_argument("-r", '--results', help='View the results. You can provide the x value to plot by')
-    parser.add_argument("-y", '--yrange', nargs=2, type=int, default=[0, 100], help='Provide x range for plotting')
+    parser.add_argument("-b", '--best', help='View the best model. Provide the x value to plot by')
+    parser.add_argument("-a", '--archive', nargs=2, help='View the best archived models. Provide the x value to plot by and top n to archive')
+    parser.add_argument("-r", '--results', help='View the results. Provide the x value to plot by')
+    parser.add_argument("-y", '--yrange', nargs=2, type=int, default=[0, 100], help='Provide y range for plotting')
 
 
     args = parser.parse_args()
@@ -215,6 +273,19 @@ if __name__ == '__main__':
     if args.best:
         best = Best_Model(downloader)
         best.view(args.best)
+
+    if args.archive:
+        # Importing here to avoid cyclic imports
+        from utils.Archive import Archive
+
+        x_label = args.archive[0]
+        top_n = int(args.archive[1])
+
+        archive = Archive(args.bucket_name, top_n)
+        archive.archive()
+
+        best_archive = Best_Archived_Models(downloader)
+        best_archive.view(x_label)
 
     if args.results:
         yrange = args.yrange
