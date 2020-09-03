@@ -88,7 +88,7 @@ class Manager:
     def add_progress(self, key, value):
         improved = self.progress.add(key, value)
         if improved and self.model is not None:
-            self.best_params = self.model.state_dict()
+            self.best_params = copy.deepcopy(self.model.state_dict())
 
     def finished(self, param_dict=None):
         '''
