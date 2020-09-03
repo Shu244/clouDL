@@ -27,7 +27,7 @@ elif [ "$MODE" = "resume" ]; then
     --hyparams ./user_files/hyperparameters.json \
     --cluster $WORKERS ./user_files/configs.json ./startup.sh
 
-elif [ "$MODE" = "manual-test" ]; then
+elif [ "$MODE" = "manual" ]; then
 
   python prep_and_start.py stoked-brand-285120 \
     $BUCKET_NAME \

@@ -8,6 +8,7 @@ from utils.Hyperparameters import Hyperparameters
 from utils import gcp_interactions as gcp
 from utils.Downloader import Downloader
 from utils.Progress import Progress
+from functools import cmp_to_key
 from utils import strings
 
 
@@ -16,11 +17,26 @@ def hr():
 
 
 def plot_vals(x, y, title, ylabel, xlabel="Number of Epochs"):
-    plt.plot(x, y)
+    plt.plot(x, y, marker='o')
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.title(title)
     plt.show()
+
+
+def cmp(a, b):
+    '''
+    Custom sorting method
+    Both a and b are a list of tuples that contains a Progress object and a string
+    '''
+
+    a_str = a[1]
+    b_str = b[1]
+
+    a_digit = int("".join(filter(str.isdigit, a_str)))
+    b_digit = int("".join(filter(str.isdigit, b_str)))
+
+    return (a_digit > b_digit) - (a_digit < b_digit)
 
 
 class Errors:
@@ -112,13 +128,13 @@ class Best_Model:
 
             if best_progress.worse(progress.get_best()):
                 best_progress = progress
-                best_hyparams = Hyperparameters(hyparams_path=os.path.join(path, folder_name, strings.vm_progress_report))
+                best_hyparams = Hyperparameters(hyparams_path=os.path.join(path, folder_name, strings.vm_hyparams_report))
                 best_folder = folder_name
 
         return best_progress, best_hyparams, best_folder
 
     @staticmethod
-    def static_view(path, x_label):
+    def static_view(path, x_label, title):
         result = Best_Model.get_best(path)
 
         if not result:
@@ -135,12 +151,13 @@ class Best_Model:
         print(json.dumps(best_hyparams.interesting_sec()))
         print("Hyperparameters used:")
         print(best_hyparams.interesting_vals())
-        plot_vals(best_progress.progress[x_label], compare_vals, "Best Progress %s vs. %s" % (compare, x_label), compare, x_label)
+        complete_title = title + (": %s vs. %s" % (compare, x_label))
+        plot_vals(best_progress.progress[x_label], compare_vals, complete_title, compare, x_label)
 
     def view(self, x_label):
         hr()
         print('Best model from VM data:')
-        Best_Model.static_view(self.path, x_label)
+        Best_Model.static_view(self.path, x_label, "Current Iteration Best Progress")
 
 
 class Results:
@@ -160,6 +177,7 @@ class Results:
             iter_id = re.search("(vm[0-9]+)-([0-9]+)", filename).group(2)
             id_str = "id: %s" % iter_id
             progress_list.append((Progress(progress=progress_json), id_str))
+        progress_list.sort(key=cmp_to_key(cmp))
         return progress_list
 
     def get_all_progress(self):
@@ -220,7 +238,7 @@ class Results:
             else:
                 subplot = axs[row, col]
 
-            subplot.plot(x, y)
+            subplot.plot(x, y, marker='o')
             subplot.set_title(subplot_title)
             subplot.set_ylim(yrange)
 
@@ -253,12 +271,9 @@ class Best_Archived_Models:
     def __init__(self, downloader):
         self.bucket_name = downloader.bucket_name
         self.downloader = downloader
-        self.archive_path = downloader.cplt_tmppth(strings.archive)
-        self.path = os.path.join(self.archive_path, strings.best_model)
-
-        if not os.path.isdir(self.archive_path):
-            os.mkdir(self.archive_path)
-            self.downloader.download(os.path.join(strings.archive, strings.best_model), strings.params_file)
+        self.archive_path = os.path.join(strings.archive, strings.best_model)
+        self.path = downloader.cplt_tmppth(self.archive_path)
+        self.downloader.download(self.archive_path, strings.params_file)
 
     def get_meta(self):
         meta_path = os.path.join(strings.archive, strings.best_model, strings.meta)
@@ -284,12 +299,13 @@ class Best_Archived_Models:
                 progress = Progress(progress_path=progress_path)
 
                 progress_list.append((progress, subplot_title))
+        progress_list.sort(key=cmp_to_key(cmp))
         return progress_list
 
     def view(self, x_label, yrange):
         hr()
         print('Best model from archive:')
-        Best_Model.static_view(self.path, x_label)
+        Best_Model.static_view(self.path, x_label, "Best Archived/Overall Progress")
 
         progress_list = self.best_progress_list()
 
@@ -335,6 +351,10 @@ if __name__ == '__main__':
         errors = Errors(downloader)
         errors.view(args.errs)
 
+    if args.results:
+        results = Results(downloader)
+        results.view(args.results, args.yrange)
+
     if args.best:
         best = Best_Model(downloader)
         best.view(args.best)
@@ -354,6 +374,3 @@ if __name__ == '__main__':
         best_archive = Best_Archived_Models(downloader)
         best_archive.view(x_label, args.yrange)
 
-    if args.results:
-        results = Results(downloader)
-        results.view(args.results, args.yrange)

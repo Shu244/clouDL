@@ -1,3 +1,4 @@
+import pathlib
 import os
 
 from utils import gcp_interactions as gcp
@@ -11,7 +12,7 @@ class Downloader:
     def download(self, folder_name, ignore_filename=None):
         dest = self.cplt_tmppth(folder_name)
         if not os.path.isdir(dest):
-            os.mkdir(dest)
+            pathlib.Path(dest).mkdir(parents=True, exist_ok=True)
             gcp.download_folder(self.bucket_name, folder_name, dest, ignore_filename)
 
     def cplt_tmppth(self, folder):
