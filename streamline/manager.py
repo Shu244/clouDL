@@ -41,6 +41,10 @@ class Manager:
         self.load_params = self.hyparams.force_cur_values()
         self.count = 0
 
+        if self.load_params:
+            params_path = os.path.join(strings.vm_progress, str(rank), strings.params_file)
+            gcp.download_file(self.bucket_name, params_path, self.temp_path)
+
     def start_epoch(self):
         return self.progress.start_epoch()
 
