@@ -97,13 +97,11 @@ def run(manager, param_pth, best_param_pth):
 
     model = Net().to(device)
 
-    if param_pth:
-        model.load_state_dict(torch.load(param_pth, map_location=device))
-
     optimizer = optim.Adadelta(model.parameters(), lr=LR)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=GAMMA)
     start_epoch = manager.start_epoch()
+    manager.track_model(model)
     for epoch in range(start_epoch, EPOCHS):
         manager.add_progress("epochs", epoch)
         train(model, device, train_loader, optimizer, epoch, manager)
@@ -113,9 +111,9 @@ def run(manager, param_pth, best_param_pth):
 
         if epoch > 0 and epoch % SAVE_INTERVAL == 0:
             # save progress
-            manager.save_progress(model.state_dict())
+            manager.save_progress()
 
-    manager.finished(model.state_dict())
+    manager.finished()
 
 
 if __name__ == '__main__':

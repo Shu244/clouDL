@@ -24,15 +24,11 @@ class Progress:
 
     def get_compare_vals(self):
         compare, _ = self.get_compare_goal()
-        return self.progress[compare] if compare in self.progress else None
+        return self.progress[compare]
 
     def get_best(self):
         _, goal = self.get_compare_goal()
         compare_vals = self.get_compare_vals()
-
-        if compare_vals is None:
-            return None
-
         return max(compare_vals) if goal == "max" else min(compare_vals)
 
     def add(self, key, value):
