@@ -71,7 +71,7 @@ def test(model, device, test_loader, manager):
     manager.add_progress("val_accuracy", 100. * correct / len(test_loader.dataset))
 
 
-def run(manager, param_pth):
+def run(manager, param_pth, best_param_pth):
     hyparams = manager.get_hyparams()
 
     BATCH_SIZE = hyparams["BATCH_SIZE"]
@@ -113,7 +113,7 @@ def run(manager, param_pth):
 
         if epoch > 0 and epoch % SAVE_INTERVAL == 0:
             # save progress
-            manager.save_progress(model.state_dict())
+            manager.save_progress(model.state_dict(), model.state_dict())
 
     manager.finished(model.state_dict())
 
