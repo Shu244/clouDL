@@ -1,12 +1,19 @@
 import json
 
+from utils import gcp_interactions as gcp
 from . import strings
 
 
 class Progress:
-    def __init__(self, progress_path=None, progress=None):
+    def __init__(self, progress_path=None, progress=None, bucket_name=None):
         if progress_path:
-            self.progress = json.load(open(progress_path))
+            if bucket_name:
+                try:
+                    self.progress = gcp.stream_download_json(bucket_name, progress_path)
+                except Exception as err:
+                    self.reset()
+            else:
+                self.progress = json.load(open(progress_path))
         if progress:
             self.progress = progress
         if not progress and not progress_path:

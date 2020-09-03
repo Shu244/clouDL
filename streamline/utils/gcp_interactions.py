@@ -415,22 +415,9 @@ def delete_instance(project_id, zone, name):
 
 
 class QuickSend:
-    def __init__(self, temp_path, bucket_name):
-        self.temp_path = temp_path
+    def __init__(self, bucket_name):
         self.bucket_name = bucket_name
 
     def send(self, filename, msg, folder):
-        '''
-        Writes the msg to the filename in the tmp folder then sends it
-        to google cloud storage in the folder specified by the arg.
-
-        :param filename: Name of the file of for the msg
-        :param msg: Message to send
-        :param folder: Folder to store the file in cloud storage
-        '''
-
-        file_path = os.path.join(self.temp_path, filename)
-        f = open(file_path, 'w')
-        f.write(msg)
-        f.close()
-        upload_file(self.bucket_name, file_path, folder)
+        file_path = os.path.join(folder, filename)
+        stream_upload_str(self.bucket_name, msg, file_path)

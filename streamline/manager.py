@@ -30,25 +30,16 @@ class Manager:
         self.rank = rank
         self.bucket_name = bucket_name
         self.temp_path = temp_path
-        self.quick_send = gcp.QuickSend(temp_path, bucket_name)
+        self.quick_send = gcp.QuickSend(bucket_name)
 
-        self.download_progress_folder(bucket_name, temp_path, rank)
+        progress_path = os.path.join(strings.vm_progress, str(rank), strings.vm_progress_report)
+        hyparams_path = os.path.join(strings.vm_progress, str(rank), strings.vm_hyparams_report)
 
-        progress_path = os.path.join(temp_path, strings.vm_progress_report)
-        hyparams_path = os.path.join(temp_path, strings.vm_hyparams_report)
-
-        if os.path.isfile(progress_path):
-            self.progress = Progress(progress_path=progress_path)
-        else:
-            self.progress = Progress()
-        self.hyparams = Hyperparameters(hyparams_path=hyparams_path)
+        self.progress = Progress(progress_path=progress_path, bucket_name=bucket_name)
+        self.hyparams = Hyperparameters(hyparams_path=hyparams_path, bucket_name=bucket_name)
 
         self.load_params = self.hyparams.force_cur_values()
         self.count = 0
-
-    def download_progress_folder(self, bucket_name, tmp_folder, rank):
-        folder_path = strings.vm_progress + ("/%d/" % rank)
-        gcp.download_folder(bucket_name, folder_path, tmp_folder)
 
     def start_epoch(self):
         return self.progress.start_epoch()
@@ -125,12 +116,10 @@ class Manager:
         progress_path = os.path.join(strings.best_model, str(self.rank), strings.vm_progress_report)
 
         try:
-            gcp.download_file(self.bucket_name, progress_path, self.temp_path)
+            best_progress_json = gcp.stream_download_json(self.bucket_name, progress_path)
+            best_progress = Progress(progress=best_progress_json)
         except Exception as err:
             return True
-
-        local_progress_path = os.path.join(self.temp_path, strings.vm_progress_report)
-        best_progress = Progress(progress_path=local_progress_path)
 
         return best_progress.worse(cur_report.get_best())
 

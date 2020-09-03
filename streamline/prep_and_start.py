@@ -179,13 +179,12 @@ if __name__ == '__main__':
     parser.add_argument("-p", "--hyparams", help="The path for the hyperparameter json")
     parser.add_argument("-a", "--archive", type=int, default=3, help="The number of best models to archive")
     parser.add_argument("-l", "--location", default="us-central1", help="The location for your bucket")
-    parser.add_argument("-m", '--tmppth', default="./tmp", help='The folder to store temporary files before moving to gcloud')
 
     args = parser.parse_args()
 
     pid = args.project_id
     bname = gen_bucket_name(pid, args.bucket_name)
-    quick_send = gcp.QuickSend(args.tmppth, bname)
+    quick_send = gcp.QuickSend(bname)
     archive = Archive(bname, args.archive)
 
     if args.mkbucket:

@@ -270,7 +270,6 @@ class Best_Archived_Models:
         folders_and_files = os.listdir(self.path)
 
         if len(folders_and_files) == 0:
-            print("No archive for best models")
             return None
 
         progress_list = []
@@ -311,7 +310,7 @@ class Best_Archived_Models:
             Results.subplot(main_title, x_label, yrange, progress_list)
             plt.show()
         else:
-            print('No archived best model')
+            print('No archived best model, cannot create subplots and will not plot metadata')
 
 
 if __name__ == '__main__':

@@ -2,15 +2,20 @@ import random
 import copy
 import json
 
+from utils import gcp_interactions as gcp
 from . import strings
 
 class Hyperparameters:
-    def __init__(self, hyparams_path=None, hyparams=None):
+    def __init__(self, hyparams_path=None, hyparams=None, bucket_name=None):
         if not hyparams_path and not hyparams:
             raise ValueError
 
         if hyparams_path:
-            self.raw_hyparams = json.load(open(hyparams_path))
+            # Letting errors pass through if file cannot be read since the file is mandatory
+            if bucket_name:
+                self.raw_hyparams = gcp.stream_download_json(bucket_name, hyparams_path)
+            else:
+                self.raw_hyparams = json.load(open(hyparams_path))
         if hyparams:
             self.raw_hyparams = hyparams
 
