@@ -48,3 +48,5 @@ Progress should be saved at the end of an epoch instead of the beginning. This i
 The key "epochs" should be used and managed via <code>Manager.add_progress(key, value)</code>. This will help
 restarts start on the proper epoch. If not used, an approximate start epoch will be calculated, which relies on existing progress
 and epochs starting at 0.
+
+The user will likely have to update the startup.sh
