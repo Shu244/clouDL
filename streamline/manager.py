@@ -94,11 +94,13 @@ class Manager:
         '''
         :param param_dict: This can be the current params or the best params for the model.
         '''
-        if param_dict is None and self.best_params is not None:
-            param_dict = self.best_params
-
         if param_dict is None:
-            raise ValueError
+            if self.best_params is not None:
+                param_dict = self.best_params
+            elif self.model is not None:
+                param_dict = self.model.state_dict()
+            else:
+                raise ValueError
 
         self.save_results()
         self.save_best(param_dict)
