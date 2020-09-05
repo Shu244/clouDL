@@ -6,11 +6,11 @@ import time
 import json
 import os
 
-from utils.Hyperparameters import Hyperparameters
-from utils import gcp_interactions as gcp
-from utils.Progress import Progress
-from ai.MNIST_test import run
-from utils import strings
+from .utils.hyperparameters import Hyperparameters
+from .utils import gcp_interactions as gcp
+from .utils.progress import Progress
+from MNIST_test import run
+from .utils import strings
 
 
 '''

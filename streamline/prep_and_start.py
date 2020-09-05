@@ -3,9 +3,9 @@ import copy
 import time
 import json
 
-from utils import gcp_interactions as gcp
-from utils.Archive import Archive
-from utils import strings
+from .utils import gcp_interactions as gcp
+from .utils.archive import Archive
+from .utils import strings
 
 def make_bucket(bucket_name, location):
     print(

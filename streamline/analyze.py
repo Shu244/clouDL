@@ -4,12 +4,12 @@ import json
 import os
 import re
 
-from utils.Hyperparameters import Hyperparameters
-from utils import gcp_interactions as gcp
-from utils.Downloader import Downloader
-from utils.Progress import Progress
+from .utils.hyperparameters import Hyperparameters
+from .utils import gcp_interactions as gcp
+from .utils.downloader import Downloader
+from .utils.progress import Progress
 from functools import cmp_to_key
-from utils import strings
+from .utils import strings
 
 
 def hr():
@@ -383,7 +383,7 @@ if __name__ == '__main__':
             "Archiving will move all the VM data and make them inaccessible by some features. Continue? [yes | no]")
         if archive_approval.lower() in ["yes", "y"]:
             # Importing here to avoid cyclic imports
-            from utils.Archive import Archive
+            from utils.archive import Archive
 
             x_label = args.archive[0]
             top_n = int(args.archive[1])

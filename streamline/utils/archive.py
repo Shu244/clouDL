@@ -2,8 +2,8 @@ import json
 import os
 
 from . import gcp_interactions as gcp
-from .Progress import Progress
-from analyze import Best_Model
+from .progress import Progress
+from ..analyze import Best_Model
 from . import strings
 
 
