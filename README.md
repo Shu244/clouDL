@@ -12,7 +12,7 @@ Next, activate your desired virtual conda environment. Download the zip for this
 Then run <code>bash setup.sh</code>.
 
 
-Some typical next steps:
+Some typical next steps (all associated files are in the <code>user_files</code> folder):
 1) Create a new <code>access_token</code> file to clone private repos from a VM
 2) Update <code>startup.sh</code> to at least clone your new repo
 3) Update <code>hyperparameters.json</code> to search the desired hyperparameter space

@@ -9,37 +9,38 @@ ARCHIVE=3 # Store only the top 3 in the archive
 
 
 # This allows us to use relative imports by calling python with m flag and specifying package level
-cd ..
+cd ../..
+BASE="./GCP_AI/user_files"
 
-# Flag to move data.tar.zip to cloud storage: --datapth ./GCP_AI/user_files/data.tar.gz \
+# Flag to move data.tar.zip to cloud storage: --datapth $BASE/data.tar.gz \
 
 if [ "$MODE" == "new" ]; then
 
   python -m GCP_AI.prep_and_start stoked-brand-285120 \
     $BUCKET_NAME \
-    --tokenpth ./GCP_AI/user_files/access_token \
+    --tokenpth $BASE/access_token \
     --mkbucket \
     --archive $ARCHIVE \
-    --hyparams ./GCP_AI/user_files/hyperparameters.json \
+    --hyparams $BASE/hyperparameters.json \
     --location us-central1 \
-    --cluster $WORKERS ./GCP_AI/user_files/configs.json ./GCP_AI/startup.sh
+    --cluster $WORKERS $BASE/configs.json $BASE/startup.sh
 
 elif [ "$MODE" = "resume" ]; then
 
   python -m GCP_AI.prep_and_start stoked-brand-285120 \
     $BUCKET_NAME \
     --archive $ARCHIVE \
-    --hyparams ./GCP_AI/user_files/hyperparameters.json \
-    --cluster $WORKERS ./GCP_AI/user_files/configs.json ./GCP_AI/startup.sh
+    --hyparams $BASE/hyperparameters.json \
+    --cluster $WORKERS $BASE/configs.json $BASE/startup.sh
 
 elif [ "$MODE" = "manual" ]; then
 
   python -m GCP_AI.prep_and_start stoked-brand-285120 \
     $BUCKET_NAME \
-    --tokenpth ./GCP_AI/user_files/access_token \
+    --tokenpth $BASE/access_token \
     --mkbucket \
     --archive $ARCHIVE \
-    --hyparams ./GCP_AI/user_files/hyperparameters.json \
+    --hyparams $BASE/hyperparameters.json \
     --location us-central1
 
 elif [ "$MODE" = "analyze" ]; then
