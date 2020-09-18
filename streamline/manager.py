@@ -1,25 +1,16 @@
 import traceback
-import argparse
+import requests
 import torch
 import copy
 import time
 import json
 import os
 
-from utils.Hyperparameters import Hyperparameters
-from utils import gcp_interactions as gcp
-from utils.Progress import Progress
-from ai.MNIST_test import run
-from utils import strings
+from .utils.hyperparameters import Hyperparameters
+from .utils import gcp_interactions as gcp
+from .utils.progress import Progress
+from .utils import strings
 
-
-'''
-Best model and VM progress will save the same items:
--hyparameters, parameters, progress report
-
-results will save one file containing:
--hyperparameters and progress report
-'''
 
 class Manager:
     '''
@@ -30,6 +21,10 @@ class Manager:
         self.rank = rank
         self.bucket_name = bucket_name
         self.temp_path = temp_path
+
+        if not os.path.isdir(temp_path):
+            os.mkdir(temp_path)
+
         self.quick_send = gcp.QuickSend(bucket_name)
 
         progress_path = os.path.join(strings.vm_progress, str(rank), strings.vm_progress_report)
@@ -193,48 +188,98 @@ class Manager:
         max_iter = self.hyparams.get_raw_hyparams()["max_iter"]
         return cur_iter, max_iter
 
+    @staticmethod
+    def get_meta_data():
+        root_url = 'http://metadata/computeMetadata/v1/instance/attributes/'
+        rank_url = os.path.join(root_url, 'rank')
+        bucket_url = os.path.join(root_url, 'bucket')
 
-def hyparam_search(manager):
-    start, end = manager.get_cur_max_iter()
-    quick_send = manager.quick_send
-    rank = manager.rank
-    temp_path = manager.temp_path
+        rank_request = requests.get(rank_url, headers={'Metadata-Flavor': 'Google'})
+        bucket_request = requests.get(bucket_url, headers={'Metadata-Flavor': 'Google'})
+        rank = int(rank_request.text)
+        bucket_name = bucket_request.text
 
-    while start < end:
-        try:
-            param_pth = os.path.join(temp_path, strings.params_file) if manager.load_params else None
-            best_param_pth = os.path.join(temp_path, strings.best_params_file) if manager.load_best_params else None
-            run(manager, param_pth, best_param_pth)
-            print("Trying new hyperparameters")
-        except Exception as err:
-            timestr = time.strftime("%m%d%Y-%H%M%S")
-            readable_timestr = time.strftime("%m/%d/%Y-%H:%M:%S")
-            filename = timestr + ("-vm%d" % rank) + "-iter" + str(start) + ".json"
-            msg = {
-                "traceback": traceback.format_exc(),
-                "error": str(err),
-                "hyperparameters": manager.get_hyparams(),
-                "progress": manager.get_progress(),
-                "time": readable_timestr
-            }
-            msg = json.dumps(msg)
-            print("Writing the following msg to shared errors folder in Google cloud")
-            print(msg)
-            quick_send.send(filename, msg, strings.shared_errors)
+        return rank, bucket_name
 
-            manager.reset()
-            manager.reset_cloud_progress()
-        start += 1
+    @staticmethod
+    def create_manager(tmppath='../tmp', rank=None, bucket_name=None):
+        if rank is None or bucket_name is None:
+            try:
+                meta_rank, meta_bucket_name = Manager.get_meta_data()
+                rank = meta_rank
+                bucket_name = meta_bucket_name
+            except Exception as err:
+                print('Could not get meta data')
+                raise ValueError
+        return Manager(tmppath, bucket_name, rank)
+
+    def hyparam_search(self, run):
+        start, end = self.get_cur_max_iter()
+        quick_send = self.quick_send
+        rank = self.rank
+        temp_path = self.temp_path
+
+        while start < end:
+            try:
+                param_pth = os.path.join(temp_path, strings.params_file) if self.load_params else None
+                best_param_pth = os.path.join(temp_path, strings.best_params_file) if self.load_best_params else None
+                run(self, param_pth, best_param_pth)
+                print("Trying new hyperparameters")
+            except Exception as err:
+                timestr = time.strftime("%m%d%Y-%H%M%S")
+                readable_timestr = time.strftime("%m/%d/%Y-%H:%M:%S")
+                filename = timestr + ("-vm%d" % rank) + "-iter" + str(start) + ".json"
+                msg = {
+                    "traceback": traceback.format_exc(),
+                    "error": str(err),
+                    "hyperparameters": self.get_hyparams(),
+                    "progress": self.get_progress(),
+                    "time": readable_timestr
+                }
+                msg = json.dumps(msg)
+                print("Writing the following msg to shared errors folder in Google cloud")
+                print(msg)
+                quick_send.send(filename, msg, strings.shared_errors)
+
+                self.reset()
+                self.reset_cloud_progress()
+            start += 1
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Training model over a portion of the hyperparameters")
+class TestManager:
+    '''
+    This class is used to test your training model without having to interact with the cloud by using
+    the actual Manager class.
+    This is safe to run tests and dry runs on.
+    '''
 
-    parser.add_argument('rank', help='The id for this virtual machine', type=int)
-    parser.add_argument('bucket_name', help='The name of the bucket')
-    parser.add_argument("-m", '--tmppth', default="./tmp", help='The folder to store temporary files before moving to gcloud')
+    def __init__(self, hyparams):
+        self.hyparams = hyparams
 
-    args = parser.parse_args()
+    def get_hyparams(self):
+        return self.hyparams
 
-    manager = Manager(args.tmppth, args.bucket_name, args.rank)
-    hyparam_search(manager)
+    def track_model(self, model):
+        print('Tracking model')
+
+    def start_epoch(self):
+        return 0
+
+    def set_compare_goal(self, compare, goal):
+        print('Setting compare and goal')
+
+    def add_progress(self, key, value):
+        print('Adding progress')
+
+    def finished(self, param_dict=None):
+        print('Finishing')
+
+    def save_progress(self, param_dict=None, best_param_dict=None):
+        print('Saving progress')
+
+    def hyparam_search(self, run):
+        run(self)
+
+    @staticmethod
+    def create_manager(hyparams):
+        return TestManager(hyparams)

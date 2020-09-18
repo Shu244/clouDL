@@ -1,7 +1,7 @@
 import pathlib
 import os
 
-from utils import gcp_interactions as gcp
+from . import gcp_interactions as gcp
 
 
 class Downloader:
