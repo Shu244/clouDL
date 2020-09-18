@@ -22,7 +22,7 @@ if [ "$MODE" == "new" ]; then
     --archive $ARCHIVE \
     --hyparams ./streamline/user_files/hyperparameters.json \
     --location us-central1 \
-    --cluster $WORKERS ./streamline/user_files/configs.json ./startup.sh
+    --cluster $WORKERS ./streamline/user_files/configs.json ./streamline/startup.sh
 
 elif [ "$MODE" = "resume" ]; then
 
@@ -30,7 +30,7 @@ elif [ "$MODE" = "resume" ]; then
     $BUCKET_NAME \
     --archive $ARCHIVE \
     --hyparams ./streamline/user_files/hyperparameters.json \
-    --cluster $WORKERS ./streamline/user_files/configs.json ./startup.sh
+    --cluster $WORKERS ./streamline/user_files/configs.json ./streamline/startup.sh
 
 elif [ "$MODE" = "manual" ]; then
 

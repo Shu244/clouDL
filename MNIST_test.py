@@ -130,6 +130,6 @@ if __name__ == '__main__':
         })
     else:
         from streamline.manager import Manager
-        manager = Manager.create_manager(rank=0, bucket_name='stoked-brand-285120-package')
+        manager = Manager.create_manager()
 
     manager.hyparam_search(run)

@@ -15,9 +15,11 @@ mkdir data
 gsutil cp gs://$BUCKET_NAME/secrets/access_token ./data
 TOKEN=$(<./data/access_token)
 git clone https://shu244:$TOKEN@github.com/shu244/GCP_AI.git
-git checkout package
 
 cd GCP_AI
+git pull origin package
+git checkout package
+
 python MNIST_test.py
 
 export NAME=$(curl -X GET http://metadata.google.internal/computeMetadata/v1/instance/name -H 'Metadata-Flavor: Google')
