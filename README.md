@@ -3,17 +3,49 @@
 This package allows you to easily train your model on a cluster of GPU equipped VMs in GCP. 
 This package also allows you to visualize the automatically generated reports. 
 
-Below are following options to run this repo.
+## Setting up
 
-## Using The Package
+This package was developed using a Ubuntu 20.04 machine.
 
+First download the Google Cloud SDK following the steps [here](https://cloud.google.com/compute/docs/tutorials/python-guide).
+Next, activate your desired virtual conda environment. Download the zip for this repo and extract it to the desired folder.
+Then run <code>bash setup.sh</code>.
+
+
+Some typical next steps:
+1) Create a new <code>access_token</code> file to clone private repos from a VM
+2) Update <code>startup.sh</code> to at least clone your new repo
+3) Update <code>hyperparameters.json</code> to search the desired hyperparameter space
+4) Create a <code>data.tar.zip</code> if you have training data to move to the cloud
+5) Update <code>quick_start.sh</code> if you want to change the number of workers, project_id for GCP, or top N to archive.
+
+Make sure to incorporate <code>manager.py</code> in your code!
+
+## Using Manager.py
+
+Remember to do the following when using Manger:
+1) Set the compare and goal keys for Manager using <code>Manager.set_compare_goal(compare, goal)</code>. This will allow Manager to compute the "best" params
+2) Start the epochs on the value returned by <code>Manager.start_epochs()</code> method
+3) Make sure to call <code>Manager.finished(param_dict)</code> once the model is done training
+4) Use <code>Manager.save_progress(param_dict, best_param_dict)</code> sparsely since it is expensive 
+5) <code>Manager.save_progress(param_dict, best_param_dict)</code> can be used to track the current params and the optional best params
+6) Use <code>Manager.add_progress(key, value)</code> freely
+7) Use <code>Manager.track_model(model)</code> to automatically track the best params and obtain params when saving progress
+
+Progress should be saved at the end of an epoch instead of the beginning. This is not mandatory but prevents unnecessary saving.
+
+The key "epochs" should be used and managed via <code>Manager.add_progress(key, value)</code>. This will help
+restarts start on the proper epoch. If not used, an approximate start epoch will be calculated, which relies on existing progress
+and epochs starting at 0.
+
+## Manager.py Example
 Import the manager module:
 <pre>
 if testing:
     from GCP_AI.manager import TestManager
     manager = TestManager.create_manager(hyparams_dict)
 else:
-    from streamline.manager import Manager
+    from GCP_AI.manager import Manager
     manager = Manager.create_manager()
 </pre>
 
@@ -53,7 +85,9 @@ for epoch in range(start_epoch, EPOCHS):
 manager.finished()
 </pre>
 
-## New Start
+For a complete example, visit [here](https://github.com/Shu244/test_gcp_ai).
+
+## New Start for GCP
 
 Execute <code>bash quick_start.sh new bucket_name</code> to do the following:
 1) Move your archived and compressed training data, access token (for VMs to access private repos), and hyperparameter configs to cloud storage
@@ -61,7 +95,7 @@ Execute <code>bash quick_start.sh new bucket_name</code> to do the following:
 3) Run the training on VMs which manages four things: progress, results, best models, and errors.
 4) Once finish, the VMs will shut down automatically
 
-## Job Finished
+## Finished GCP Job
 
 Execute <code>bash quick_start.sh analyze bucket_name</code> to do the following:
 1) View any errors
@@ -71,7 +105,7 @@ Execute <code>bash quick_start.sh analyze bucket_name</code> to do the following
 5) Plot archive data to view top N best models
 6) Plot meta data to track trend of your hyperparameter search
 
-## Resume Job
+## Resume Hyperparameter Search
 
 Edit your hyperparameter.json file to assign each VM a new portion of the hyperparameter grid. The available search options for a 
 given hyperparameter are: 
@@ -85,26 +119,3 @@ Then execute <code>bash quick_start.sh resume bucket_name</code> to update hyper
 ## Manual Tests:
 Execute <code>bash quick_start.sh manual bucket_name</code> to move everything to cloud storage but not spin up a cluster.
 This is helpful to run manual tests. 
-
-
-## Using Manager.py
-
-Remember to do the following when using Manger:
-1) Set the compare and goal keys for Manager using <code>Manager.set_compare_goal(compare, goal)</code>
-2) Start the epochs on the value returned by <code>Manager.start_epochs()</code> method
-3) Make sure to call <code>Manager.finished(param_dict)</code> once the model is done training
-4) Use <code>Manager.save_progress(param_dict, best_param_dict)</code> sparsely since it is expensive 
-5) <code>Manager.save_progress(param_dict, best_param_dict)</code> can be used to track the current params and the optional best params
-6) Use <code>Manager.add_progress(key, value)</code> freely
-7) Load the parameters into the model when it is provided
-
-Progress should be saved at the end of an epoch instead of the beginning. This is not mandatory but prevents unnecessary saving.
-
-The key "epochs" should be used and managed via <code>Manager.add_progress(key, value)</code>. This will help
-restarts start on the proper epoch. If not used, an approximate start epoch will be calculated, which relies on existing progress
-and epochs starting at 0.
-
-## User Customizations
-
-The user will likely have to update the startup.sh and all the files in the user_files folder.
-The user can also update quick_start.sh to customize what data to move to the cloud, number of workers, and best archived models. 
