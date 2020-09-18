@@ -196,8 +196,8 @@ class Manager:
 
         rank_request = requests.get(rank_url, headers={'Metadata-Flavor': 'Google'})
         bucket_request = requests.get(bucket_url, headers={'Metadata-Flavor': 'Google'})
-        rank = int(rank_request.content)
-        bucket_name = str(bucket_request.content)
+        rank = int(rank_request.text)
+        bucket_name = bucket_request.text
 
         return rank, bucket_name
 
