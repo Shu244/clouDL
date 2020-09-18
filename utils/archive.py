@@ -68,7 +68,7 @@ class Archive:
                 start = top_n - 1 if archive_len >= top_n else archive_len
                 for i in range(start, end, -1):
                     src = os.path.join(best_archive_path, str(i))
-                    dest = os.path.join(strings.archive, strings.best_model, str(i+1))
+                    dest = os.path.join(strings.archive, strings.best_model, str(i + 1))
                     gcp.move_cloud_folder(self.bucket_name, src, dest)
 
                 # Inserting new best into archive
