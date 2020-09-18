@@ -71,7 +71,7 @@ def test(model, device, test_loader, manager):
     manager.add_progress("val_accuracy", 100. * correct / len(test_loader.dataset))
 
 
-def run(manager, param_pth, best_param_pth):
+def run(manager, param_pth=None, best_param_pth=None):
     hyparams = manager.get_hyparams()
 
     BATCH_SIZE = hyparams["BATCH_SIZE"]
@@ -117,14 +117,19 @@ def run(manager, param_pth, best_param_pth):
 
 
 if __name__ == '__main__':
-    # Must run MNIST_test.py with m flag for this relative import to work:
-    # python -m streamline.ai.MNIST_test.py
-    from streamline.test_manager import Manager
-    manager = Manager({
-        "BATCH_SIZE": 64,
-        "EPOCHS": 5,
-        "GAMMA": 0.7,
-        "LR": 1,
-        "SAVE_INTERVAL": 2
-    })
-    run(manager, None)
+    testing = False
+
+    if testing:
+        from streamline.manager import TestManager
+        manager = TestManager.create_manager({
+            "BATCH_SIZE": 64,
+            "EPOCHS": 5,
+            "GAMMA": 0.7,
+            "LR": 1,
+            "SAVE_INTERVAL": 2
+        })
+    else:
+        from streamline.manager import Manager
+        manager = Manager.create_manager(rank=0, bucket_name='stoked-brand-285120-package')
+
+    manager.hyparam_search(run)

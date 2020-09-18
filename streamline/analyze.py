@@ -352,7 +352,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Analyzing the data after training")
 
     parser.add_argument('bucket_name', help='The name of the bucket')
-    parser.add_argument("-m", '--tmppth', default="./tmp",
+    parser.add_argument("-m", '--tmppth', default="../tmp",
                         help='The folder to store temporary files downloaded from the cloud')
     parser.add_argument("-e", '--errs', type=int,
                         help='View the shared errors. Provide an int to limit to the num of errors shown')
@@ -383,7 +383,7 @@ if __name__ == '__main__':
             "Archiving will move all the VM data and make them inaccessible by some features. Continue? [yes | no]")
         if archive_approval.lower() in ["yes", "y"]:
             # Importing here to avoid cyclic imports
-            from utils.archive import Archive
+            from .utils.archive import Archive
 
             x_label = args.archive[0]
             top_n = int(args.archive[1])
