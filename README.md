@@ -8,7 +8,7 @@ This package also allows you to visualize the automatically generated reports.
 This package was developed using a Ubuntu 20.04 machine.
 
 First download the Google Cloud SDK following the steps [here](https://cloud.google.com/compute/docs/tutorials/python-guide).
-Next, activate your desired virtual conda environment. Download the zip for this repo and extract it to the desired folder.
+Next, activate your desired virtual conda environment. Clone this repo in your desired folder.
 Then run <code>bash setup.sh</code>.
 
 
