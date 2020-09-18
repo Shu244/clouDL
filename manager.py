@@ -202,7 +202,7 @@ class Manager:
         return rank, bucket_name
 
     @staticmethod
-    def create_manager(tmppath='../tmp', rank=None, bucket_name=None):
+    def create_manager(tmppath='./tmp', rank=None, bucket_name=None):
         if rank is None or bucket_name is None:
             try:
                 meta_rank, meta_bucket_name = Manager.get_meta_data()

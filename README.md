@@ -89,7 +89,7 @@ For a complete example, visit [here](https://github.com/Shu244/test_gcp_ai).
 
 ## New Start for GCP
 
-Execute <code>bash quick_start.sh new bucket_name</code> to do the following:
+Execute <code>bash quick_start.sh new project_id bucket_name</code> to do the following:
 1) Move your archived and compressed training data, access token (for VMs to access private repos), and hyperparameter configs to cloud storage
 2) Spin up a cluster of VMs, each with hardware specified by the configs.json. 
 3) Run the training on VMs which manages four things: progress, results, best models, and errors.
@@ -97,7 +97,7 @@ Execute <code>bash quick_start.sh new bucket_name</code> to do the following:
 
 ## Finished GCP Job
 
-Execute <code>bash quick_start.sh analyze bucket_name</code> to do the following:
+Execute <code>bash quick_start.sh analyze project_id bucket_name</code> to do the following:
 1) View any errors
 2) Plot the results grouped by hyperparameter sections
 3) Plot the progress for the best model in this iteration
@@ -114,8 +114,8 @@ given hyperparameter are:
 3) Multipe/exponential search
 4) Predetermined List
 
-Then execute <code>bash quick_start.sh resume bucket_name</code> to update hyperparameter json and spin up a new cluster.
+Then execute <code>bash quick_start.sh resume project_id bucket_name</code> to update hyperparameter json and spin up a new cluster.
 
 ## Manual Tests:
-Execute <code>bash quick_start.sh manual bucket_name</code> to move everything to cloud storage but not spin up a cluster.
+Execute <code>bash quick_start.sh manual project_id bucket_name</code> to move everything to cloud storage but not spin up a cluster.
 This is helpful to run manual tests. 
