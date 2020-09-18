@@ -1,9 +1,8 @@
 #!/bin/bash
 
-# Note that GOOGLE SDK for the CMD must also be downloaded
+# Note that GOOGLE SDK for the CMD and Anaconda must be downloaded and installed
 # Downloads packages needed for this package
 # Original build is for Linux (Ubuntu) machine
-# Prerequisites: Anaconda
 
 conda install pytorch torchvision cudatoolkit=10.2 -c pytorch
 conda install -c conda-forge google-api-python-client
