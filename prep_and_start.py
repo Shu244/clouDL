@@ -92,6 +92,17 @@ def hyperparamters(bucket_name, hyparams_path, archive, quick_send):
 
 
 def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup_script_pth, quick_send):
+    '''
+    Builds a cluster of virtual machines in Google Cloud Platform (GCP).
+
+    :param project_id: The project ID for GCP.
+    :param bucket_name: The bucket name for the VMs to store checkpoints and statistics.
+    :param workers: The number of VMs to build.
+    :param machine_configs_pth: The path for the JSON file specifying the hardware of the VMs.
+    :param startup_script_pth: The startup script each VM should run.
+    :param quick_send: A custom class used to easily send messages to Google Cloud Storage.
+    '''
+
     print(
         '''
         Building cluster for training
