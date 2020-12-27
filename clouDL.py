@@ -2,10 +2,54 @@ import argparse
 import copy
 import time
 import json
+import os
 
 from .utils import gcp_interactions as gcp
+from pkg_resources import resource_string
 from .utils.archive import Archive
 from .utils import strings
+
+
+def user_accepts(msg):
+    response = input(msg.strip() + " [y | n]")
+    if response.lower() in ['yes', 'y']:
+        return True
+    return False
+
+
+def create_files(folder, list_files):
+    for filename in list_files:
+        save_to_path = os.path.join(folder, filename)
+        data = resource_string('clouDL_utils', filename)
+        with open(save_to_path, 'w') as f:
+            f.write(data)
+
+
+def check_all_expected_files(parent_folder):
+    user_files_folder = os.path.join(parent_folder, strings.user_files)
+    expected_files = [strings.user_configs, strings.user_hyperparameters,
+                      strings.user_start_up, strings.user_quick_start, 'README.md']
+
+    if not os.path.isdir(user_files_folder):
+        if user_accepts('The expected user configuration files are not present. Do you want to create them?'):
+            os.mkdir(user_files_folder)
+            create_files(parent_folder, expected_files)
+        else:
+            raise ValueError("Expected configuration files are not present")
+
+    missing = []
+    for expected_file in expected_files:
+        expected_file_pth = os.path.join(user_files_folder, expected_file)
+        if not os.path.isfile(expected_file_pth) or not os.access(expected_file_pth, os.R_OK):
+            missing.append(expected_file)
+
+    if missing:
+        print('The following expected configuration files are missing:', missing)
+        if user_accepts('Do you want to create them?'):
+            create_files(parent_folder, missing)
+        else:
+            raise ValueError("Expected configuration files are not present")
+
 
 def make_bucket(bucket_name, location):
     print(
@@ -176,13 +220,36 @@ def gen_bucket_name(project_id, bucket_name):
 def hr():
     print('----'*20)
 
+'''
+TODO:
+
+GCP_AI
+
+rename: clouDL
+
+configs.json:
+	update default family and update comments
+
+scrap quick start and write a more comprehensive prep_and_start.py. create clouDL method and entrypoint
+
+create clouDL_analyze method and entrypoint
+
+separate VM startup script and user startup script
+
+Write code to generate user_files when not found
+
+Make app pip installable
+
+Create early stopping with patience
+
+'''
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Prepping buckets and spinning up VMs to train model.")
 
     parser.add_argument('project_id', help='Project ID')
     parser.add_argument('bucket_name', help='The name of the bucket')
-    parser.add_argument("-c", '--cluster', nargs=3,
+    parser.add_argument("-c", '--cluster', nargs=1,
                         help='Build VM cluster for training. Requires number of workers, machine configs path, and startup script path')
     parser.add_argument("-t", '--tokenpth', help='The access_token path is used to download private repo from GitHub')
     parser.add_argument("-b", "--mkbucket", action="store_true", help="Create the bucket")

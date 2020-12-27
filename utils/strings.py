@@ -16,3 +16,12 @@ params_file = "params.pt"
 best_params_file = "best-params.pt"
 cluster_error = "cluster-startup-err.json"
 meta = "meta.json"
+
+# Local folder names
+user_files = "user_files"
+
+# Local file names
+user_configs = "configs.json"
+user_hyperparameters = "hyperparameters.json"
+user_start_up = "user_startup.sh"
+user_quick_start = "quick_start.sh"

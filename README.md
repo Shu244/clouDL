@@ -42,10 +42,10 @@ and epochs starting at 0.
 Import the manager module:
 <pre>
 if testing:
-    from GCP_AI.manager import TestManager
+    from clouDL.manager import TestManager
     manager = TestManager.create_manager(hyparams_dict)
 else:
-    from GCP_AI.manager import Manager
+    from clouDL.manager import Manager
     manager = Manager.create_manager()
 </pre>
 

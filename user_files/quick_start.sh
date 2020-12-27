@@ -12,11 +12,11 @@ BUCKET_NAME=$3
 
 # This allows us to use relative imports by calling python with m flag and specifying package level
 cd ../..
-BASE="./GCP_AI/user_files"
+BASE="./clouDL/user_files"
 
 if [ "$MODE" == "new" ]; then
 
-  python -m GCP_AI.prep_and_start $PROJECT_ID \
+  python -m clouDL.prep_and_start $PROJECT_ID \
     $BUCKET_NAME \
     --tokenpth $BASE/access_token \
     --mkbucket \
@@ -27,7 +27,7 @@ if [ "$MODE" == "new" ]; then
 
 elif [ "$MODE" = "resume" ]; then
 
-  python -m GCP_AI.prep_and_start $PROJECT_ID \
+  python -m clouDL.prep_and_start $PROJECT_ID \
     $BUCKET_NAME \
     --archive $ARCHIVE \
     --hyparams $BASE/hyperparameters.json \
@@ -35,7 +35,7 @@ elif [ "$MODE" = "resume" ]; then
 
 elif [ "$MODE" = "manual" ]; then
 
-  python -m GCP_AI.prep_and_start $PROJECT_ID \
+  python -m clouDL.prep_and_start $PROJECT_ID \
     $BUCKET_NAME \
     --tokenpth $BASE/access_token \
     --mkbucket \
@@ -45,7 +45,7 @@ elif [ "$MODE" = "manual" ]; then
 
 elif [ "$MODE" = "analyze" ]; then
 
-  python -m GCP_AI.analyze $PROJECT_ID-$BUCKET_NAME \
+  python -m clouDL.analyze $PROJECT_ID-$BUCKET_NAME \
     --errs 10 \
     --best epochs \
     --archive epochs $ARCHIVE \

@@ -40,7 +40,7 @@ def upload_folder(bucket_name, src, dest):
     Moves the contents of the src folder inside dest folder.
     This function should not be used to push training data.
     Instead, archive and zip training folder so it can be pushed as one file
-    For safety, dest be empty
+    For safety, dest must be empty
     Raises FileNotFoundError when src file(s) does not exists.
 
     :param bucket_name: name of bucket
@@ -285,15 +285,8 @@ def list_instances(project_id, zone):
 
 def create_instance(project_id, configs, startup_script, zone, rank, bucket_name):
     name = configs["name_prefix"] + ("-%d" % rank)
-
-    image_response = compute.images().getFromFamily(
-        project='deeplearning-platform-release',
-        family=configs['family']).execute()
-    source_image = image_response['selfLink']
-
     machine_type = "zones/%s/machineTypes/n1-standard-%d" % (zone, configs["cpu_count"])
     accelerator_type = "zones/%s/acceleratorTypes/%s" % (zone, configs['gpu'])
-
     subnetwork = "regions/%s/subnetworks/default" % zone[:zone.rfind('-')]
 
     config = {
@@ -305,7 +298,7 @@ def create_instance(project_id, configs, startup_script, zone, rank, bucket_name
                 "boot": True,
                 "autoDelete": True,
                 "initializeParams": {
-                    'sourceImage': source_image,
+                    'sourceImage': configs['sourceImage'],
                     "diskSizeGb": configs["diskSizeGb"],
                 }
             }
