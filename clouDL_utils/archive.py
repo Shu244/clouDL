@@ -1,10 +1,10 @@
 import json
 import os
 
-from . import gcp_interactions as gcp
-from .progress import Progress
-from ..analyze import Best_Model
-from . import strings
+from clouDL_utils import gcp_interactions as gcp
+from clouDL_utils.progress import Progress
+from clouDL.analyze import Best_Model
+from clouDL_utils import strings
 
 
 class Archive:

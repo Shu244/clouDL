@@ -4,12 +4,13 @@ import json
 import os
 import re
 
-from .utils.hyperparameters import Hyperparameters
-from .utils import gcp_interactions as gcp
-from .utils.downloader import Downloader
-from .utils.progress import Progress
+from clouDL_utils.hyperparameters import Hyperparameters
+from clouDL_utils import gcp_interactions as gcp
+from clouDL_utils.downloader import Downloader
+from clouDL_utils.progress import Progress
+from clouDL_utils import strings
+
 from functools import cmp_to_key
-from .utils import strings
 
 
 def hr():
@@ -347,8 +348,7 @@ class Best_Archived_Models:
             print('No archived best model, cannot create subplots and will not plot metadata')
 
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description="Analyzing the data after training")
 
     parser.add_argument('bucket_name', help='The name of the bucket')
@@ -383,7 +383,7 @@ if __name__ == '__main__':
             "Archiving will move all the VM data and make them inaccessible by some features. Continue? [yes | no]")
         if archive_approval.lower() in ["yes", "y"]:
             # Importing here to avoid cyclic imports
-            from .utils.archive import Archive
+            from clouDL_utils.archive import Archive
 
             x_label = args.archive[0]
             top_n = int(args.archive[1])
@@ -396,3 +396,7 @@ if __name__ == '__main__':
             best_archive.view(x_label, args.yrange)
         else:
             print("Cannot analyze archive until VM data is archived")
+
+
+if __name__ == '__main__':
+    main()

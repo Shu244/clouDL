@@ -1,5 +1,9 @@
-data
+__pycache__
 *.pyc
 secrets*
 access_token*
 tmp
+
+build
+dist
+clouDL.egg-info

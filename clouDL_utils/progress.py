@@ -1,7 +1,7 @@
 import json
 
-from . import gcp_interactions as gcp
-from . import strings
+from clouDL_utils import gcp_interactions as gcp
+from clouDL_utils import strings
 
 
 class Progress:

@@ -2,8 +2,8 @@ import random
 import copy
 import json
 
-from . import gcp_interactions as gcp
-from . import strings
+from clouDL_utils import gcp_interactions as gcp
+from clouDL_utils import strings
 
 class Hyperparameters:
     def __init__(self, hyparams_path=None, hyparams=None, bucket_name=None):

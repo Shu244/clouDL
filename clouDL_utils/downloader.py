@@ -1,7 +1,7 @@
 import pathlib
 import os
 
-from . import gcp_interactions as gcp
+from clouDL_utils import gcp_interactions as gcp
 
 
 class Downloader:

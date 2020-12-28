@@ -4,51 +4,47 @@ import time
 import json
 import os
 
-from .utils import gcp_interactions as gcp
+from clouDL_utils import gcp_interactions as gcp
+from clouDL_utils.archive import Archive
+from clouDL_utils import strings
+
 from pkg_resources import resource_string
-from .utils.archive import Archive
-from .utils import strings
 
 
 def user_accepts(msg):
-    response = input(msg.strip() + " [y | n]")
+    response = input(msg.strip() + " [y|n]")
     if response.lower() in ['yes', 'y']:
         return True
     return False
 
 
-def create_files(folder, list_files):
-    for filename in list_files:
-        save_to_path = os.path.join(folder, filename)
-        data = resource_string('clouDL_utils', filename)
-        with open(save_to_path, 'w') as f:
-            f.write(data)
+def create_default_user_file(save_path, filename):
+    data = resource_string('clouDL_utils', os.path.join('user_files', filename))
+    with open(save_path, 'w') as f:
+        f.write(data.decode())
 
 
-def check_all_expected_files(parent_folder):
+def create_user_files():
+    parser = argparse.ArgumentParser(description="Creating all the user files")
+    parser.add_argument("-f", "--folder", default="./", help="The folder to put the user files in")
+    args = parser.parse_args()
+
+    parent_folder = os.path.abspath(args.folder)
+    if not user_accepts('Do you want to create the user files in %s?' % parent_folder):
+        print('Not creating user files')
+        return
+
     user_files_folder = os.path.join(parent_folder, strings.user_files)
-    expected_files = [strings.user_configs, strings.user_hyperparameters,
+    expected_files = [strings.user_configs, strings.user_hyperparameters, strings.user_access_token,
                       strings.user_start_up, strings.user_quick_start, 'README.md']
 
     if not os.path.isdir(user_files_folder):
-        if user_accepts('The expected user configuration files are not present. Do you want to create them?'):
-            os.mkdir(user_files_folder)
-            create_files(parent_folder, expected_files)
-        else:
-            raise ValueError("Expected configuration files are not present")
+        os.mkdir(user_files_folder)
 
-    missing = []
     for expected_file in expected_files:
         expected_file_pth = os.path.join(user_files_folder, expected_file)
         if not os.path.isfile(expected_file_pth) or not os.access(expected_file_pth, os.R_OK):
-            missing.append(expected_file)
-
-    if missing:
-        print('The following expected configuration files are missing:', missing)
-        if user_accepts('Do you want to create them?'):
-            create_files(parent_folder, missing)
-        else:
-            raise ValueError("Expected configuration files are not present")
+            create_default_user_file(expected_file_pth, expected_file)
 
 
 def make_bucket(bucket_name, location):
@@ -159,7 +155,11 @@ def build_cluster(project_id, bucket_name, workers, machine_configs_pth, startup
 
     max_workers = workers
     machine_configs = json.load(open(machine_configs_pth))
-    startup_script = open(startup_script_pth, 'r').read()
+
+    # Generating startup script
+    startup_template = resource_string('clouDL_utils', 'startup.sh').decode()
+    user_startup_script = open(startup_script_pth, 'r').read()
+    startup_script = startup_template.replace('# USER_CODE_GOES_HERE', user_startup_script)
 
     valid_zones = machine_configs['zones']
     remaining_ranks = list(range(0, workers))
@@ -222,41 +222,30 @@ def hr():
 
 '''
 TODO:
-
-GCP_AI
-
-rename: clouDL
-
-configs.json:
-	update default family and update comments
-
-scrap quick start and write a more comprehensive prep_and_start.py. create clouDL method and entrypoint
-
-create clouDL_analyze method and entrypoint
-
-separate VM startup script and user startup script
-
-Write code to generate user_files when not found
-
 Make app pip installable
-
-Create early stopping with patience
-
 '''
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description="Prepping buckets and spinning up VMs to train model.")
 
-    parser.add_argument('project_id', help='Project ID')
-    parser.add_argument('bucket_name', help='The name of the bucket')
-    parser.add_argument("-c", '--cluster', nargs=1,
+    parser.add_argument('project_id',
+                        help='Project ID')
+    parser.add_argument('bucket_name',
+                        help='The name of the bucket')
+    parser.add_argument("-c", '--cluster', nargs=3,
                         help='Build VM cluster for training. Requires number of workers, machine configs path, and startup script path')
-    parser.add_argument("-t", '--tokenpth', help='The access_token path is used to download private repo from GitHub')
-    parser.add_argument("-b", "--mkbucket", action="store_true", help="Create the bucket")
-    parser.add_argument("-d", "--datapth", help="The path of the data to move into the bucket")
-    parser.add_argument("-p", "--hyparams", help="The path for the hyperparameter json")
-    parser.add_argument("-a", "--archive", type=int, default=3, help="The number of best models to archive")
-    parser.add_argument("-l", "--location", default="us-central1", help="The location for your bucket")
+    parser.add_argument("-t", '--tokenpth',
+                        help='The access_token path is used to download private repo from GitHub')
+    parser.add_argument("-b", "--mkbucket", action="store_true",
+                        help="Create the bucket")
+    parser.add_argument("-d", "--datapth",
+                        help="The path of the data to move into the bucket")
+    parser.add_argument("-p", "--hyparams",
+                        help="The path for the hyperparameter json")
+    parser.add_argument("-a", "--archive", type=int, default=3,
+                        help="The number of best models to archive")
+    parser.add_argument("-l", "--location", default="us-central1",
+                        help="The location for your bucket")
 
     args = parser.parse_args()
 
@@ -282,9 +271,7 @@ if __name__ == '__main__':
         hr()
 
     if args.cluster:
-        push_latest_code = input(
-            "VMs will pull from your github, is the desired version the latest commit on master? [yes | no]")
-        if push_latest_code.lower() in ["yes", "y"]:
+        if user_accepts('VMs will pull from your github, is the desired version the latest commit on master?'):
             num_worker = int(args.cluster[0])
             machine_configs_pth = args.cluster[1]
             startup_script_pth = args.cluster[2]
