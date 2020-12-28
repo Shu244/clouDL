@@ -24,11 +24,11 @@ Some typical next steps (all associated files are in the newly created folder):
    Use <code>clouDL -h</code> for more. 
 
 
-Make sure to incorporate <code>Manager</code> in your code when training. 
+Make sure to incorporate with the <code>Manager</code> class in your code when training. 
 
 ## Using Manager
 
-Manager is essentially the interface you will interact to enable training/hyperparamter tuning on a cluster of VMs. 
+Manager is essentially the interface you will interact with to enable training/hyperparamter tuning on a cluster of VMs. 
 
 Remember to do the following when using Manger:
 
@@ -53,7 +53,7 @@ For a complete example, visit [here](https://github.com/Shu244/test_clouDL).
 
 ## New Start
 
-From `clouDL_create`, a `quick_start.sh` file is provided with three four modes. The `new` mode
+From `clouDL_create`, a `quick_start.sh` file is provided with four modes. The `new` mode
 does the following:
 1) Move your archived and compressed training data, access token (for VMs to access private repos), and hyperparameter configs to cloud storage
 2) Spin up a cluster of VMs, each with hardware specified by the configs.json. 
