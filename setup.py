@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='clouDL',
-    version='0.1.0',
+    version='0.1.1',
     author="Shuhao Lai",
     author_email="Shuhaolai18@gmail.com",
     description="Automatically manages a cluster of VMs in GCP to train and hyperparamter tune DL models that use PyTorch.",
