@@ -11,7 +11,7 @@ First download the Google Cloud SDK following the steps [here](https://cloud.goo
 so you can access the Google Cloud Platform tools from the command line and rest API.
 Next, install this package using <code>pip install clouDL</code>.
 
-Lastly, to configure your VM cluster, run <code>clouDL_create -r PATH</code>. This will create a folder containing the
+Lastly, to configure your VM cluster, run <code>clouDL_create -f PATH</code>. This will create a folder containing the
 necessary configuration files in PATH. 
 
 Some typical next steps (all associated files are in the newly created folder):
