@@ -202,7 +202,7 @@ class Manager:
         return rank, bucket_name
 
     @staticmethod
-    def create_manager(tmppath='./tmp', rank=None, bucket_name=None):
+    def create_manager(torch, tmppath='./tmp', rank=None, bucket_name=None):
         if rank is None or bucket_name is None:
             try:
                 meta_rank, meta_bucket_name = Manager.get_meta_data()
@@ -211,7 +211,7 @@ class Manager:
             except Exception as err:
                 print('Could not get meta data')
                 raise ValueError
-        return Manager(tmppath, bucket_name, rank)
+        return Manager(tmppath, bucket_name, rank, torch)
 
     def hyparam_search(self, run):
         start, end = self.get_cur_max_iter()

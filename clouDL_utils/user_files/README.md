@@ -23,6 +23,5 @@ created for you, but once it has been created, you can pass it as a command line
 
 ## File Structure in VM
 
-The current working directory contains
-a `code` and `data` folder. The `code` folder contains your cloned repo while the 
-`data` folder contains your uncompressed and extracted data and your access_token. 
+The current working directory contains a `data` folder. The 
+`data` folder contains your uncompressed and extracted data and your access_token if provided. 

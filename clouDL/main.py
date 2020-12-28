@@ -220,10 +220,6 @@ def gen_bucket_name(project_id, bucket_name):
 def hr():
     print('----'*20)
 
-'''
-TODO:
-Make app pip installable
-'''
 
 def main():
     parser = argparse.ArgumentParser(description="Prepping buckets and spinning up VMs to train model.")
