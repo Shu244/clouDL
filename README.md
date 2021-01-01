@@ -7,8 +7,8 @@ This package also allows you to visualize the automatically generated reports.
 
 This package was developed using a Ubuntu 20.04 machine.
 
-First download the Google Cloud SDK following the steps [here](https://cloud.google.com/sdk/docs/install#deb)
-so you can access the Google Cloud Platform tools from the command line and rest API.
+First download the Google Cloud SDK following the steps [here](https://cloud.google.com/sdk/docs/install#deb) 
+and enable rest API following the steps [here](https://googleapis.dev/python/google-api-core/latest/auth.html).
 Next, install this package using <code>pip install clouDL</code>.
 
 Lastly, to configure your VM cluster, run <code>clouDL_create -f PATH</code>. This will create a folder containing the
