@@ -7,7 +7,7 @@ This package also allows you to visualize the automatically generated reports.
 
 This package was developed using a Ubuntu 20.04 machine.
 
-First download the Google Cloud SDK following the steps [here](https://cloud.google.com/sdk/docs/install#deb) 
+First download the Google Cloud SDK following the steps [here](https://cloud.google.com/sdk/docs/quickstart#linux) 
 and enable rest API following the steps [here](https://googleapis.dev/python/google-api-core/latest/auth.html).
 Next, install this package using <code>pip install clouDL</code>.
 
